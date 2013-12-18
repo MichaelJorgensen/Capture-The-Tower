@@ -1,0 +1,22 @@
+name: CaptureTheTower
+version: 1.0.0
+author: mike101102
+main: com.homie.ctt.CTT
+depend: [GameAPI]
+commands:
+    ctt:
+        description: Main command for CTT
+        usage: /<command>
+permissions:
+    ctt.*:
+        description: Gives access to all CTT commands
+        default: op
+        children:
+            ctt.create: true
+            ctt.delete: true
+    ctt.create:
+        description: Allows you to create new games
+        default: op
+    ctt.delete:
+        description: Allows you to delete games
+        default: op
