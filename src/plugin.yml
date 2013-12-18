@@ -1,7 +1,7 @@
 name: CaptureTheTower
 version: 1.0.0
 author: mike101102
-main: com.homie.ctt.CTT
+main: com.mike101102.ctt.CTT
 depend: [GameAPI]
 commands:
     ctt:

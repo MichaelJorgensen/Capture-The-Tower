@@ -30,6 +30,7 @@ public class CTTListener implements Listener {
         okayNoArgCommands.add("/leave");
         okayArgCommands.add("/j");
         okayArgCommands.add("/join");
+        CTT.debug("CTTListener activated");
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
@@ -67,6 +68,7 @@ public class CTTListener implements Listener {
                     } else {
                         g.sendGameMessage(player.getDisplayName() + ChatColor.GOLD + " has died");
                     }
+                    CTT.debug(player.getName() + " has been killed, player reset complete");
                     return;
                 }
             }
@@ -88,6 +90,7 @@ public class CTTListener implements Listener {
                 if (g.getPlayers().contains(player.getName())) {
                     player.sendMessage(ChatColor.RED + "You can't use commands while in game! To leave, use /l");
                     event.setCancelled(true);
+                    CTT.debug(player.getName() + " has been denied the use of the command: " + event.getMessage());
                     return;
                 }
             }

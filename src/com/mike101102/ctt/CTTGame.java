@@ -2,6 +2,7 @@ package com.mike101102.ctt;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 
 import org.bukkit.Bukkit;
@@ -25,7 +26,6 @@ import com.homie.gameapi.sql.SQL;
 
 public class CTTGame extends Game {
 
-    private CTT plugin;
     private SQL sql;
 
     private int time = 0;
@@ -67,7 +67,6 @@ public class CTTGame extends Game {
 
     public CTTGame(CTT plugin, int gameid, int maxPlayers, int timeLimit, Location signLoc, ArrayList<Location> teamspawns, Location blueGoal, Location redGoal) {
         super(plugin, gameid, maxPlayers, signLoc, ChatColor.GREEN + "[CTT]", GameStage.Waiting, teamspawns, 20L, 20L);
-        this.plugin = plugin;
         sql = plugin.getSQL();
         board = Bukkit.getScoreboardManager().getNewScoreboard();
         Objective obj = board.registerNewObjective("score", "tower");
@@ -75,6 +74,7 @@ public class CTTGame extends Game {
         obj.setDisplaySlot(DisplaySlot.SIDEBAR);
         blueScore = obj.getScore(Bukkit.getOfflinePlayer(ChatColor.BLUE + "Blue"));
         redScore = obj.getScore(Bukkit.getOfflinePlayer(ChatColor.RED + "Red"));
+        debug("Objectives and scores setup");
         bLoc1 = blueGoal;
         bLoc2 = new Location(bLoc1.getWorld(), bLoc1.getX(), bLoc1.getY() + 1, bLoc1.getZ());
         bLoc3 = new Location(bLoc1.getWorld(), bLoc2.getX(), bLoc2.getY() + 1, bLoc2.getZ());
@@ -85,12 +85,19 @@ public class CTTGame extends Game {
         rLoc4 = new Location(rLoc1.getWorld(), rLoc3.getX(), rLoc3.getY() + 1, rLoc3.getZ());
         this.timeLimit = timeLimit;
         resetGoalBlocks();
+        debug("Game is ready");
+    }
+    
+    private void debug(String message) {
+        CTT.debug("[GAME:" + getGameId() + "] " + message);
     }
 
     @Override
     public void addPlayer(Player player) {
+        debug("Attempting to add player " + player.getName());
         if (getPlayers().size() >= getMaxPlayers()) {
             player.sendMessage(prefix + "This game is full");
+            debug("Game is full, player denied");
             return;
         }
         player.setSaturation(10f);
@@ -104,7 +111,7 @@ public class CTTGame extends Game {
             resetPlayerInventory(player);
             player.teleport(this.getTeamSpawns().get(1));
             if (!reset) {
-                sendGameMessage(player.getDisplayName() + ChatColor.GOLD + " has joined the" + r.getName() + ChatColor.GOLD + "!");
+                sendGameMessage(player.getDisplayName() + ChatColor.GOLD + " has joined the " + r.getName() + ChatColor.GOLD + "!");
             }
         } else {
             b.getPlayers().add(player.getName());
@@ -114,10 +121,12 @@ public class CTTGame extends Game {
                 sendGameMessage(player.getDisplayName() + ChatColor.GOLD + " has joined the " + b.getName() + ChatColor.GOLD + "!");
             }
         }
+        debug(player.getName() + " has been successfully added to the game");
     }
 
     @Override
     public void removePlayer(Player player) {
+        debug("Attempting to remove player " + player.getName());
         player.setScoreboard(Bukkit.getScoreboardManager().getNewScoreboard());
         player.getInventory().clear();
         player.getInventory().setContents(pd.get(player.getName()).getPlayerInventory());
@@ -135,9 +144,11 @@ public class CTTGame extends Game {
         } else {
             r.getPlayers().remove(player.getName());
         }
+        debug(player.getName() + " has been removed successfully from the game");
     }
     
     public int getBlueScoreFromBlocks() {
+        debug("Calculating blue score");
         int b = 0;
         if (bLoc1.getBlock().getType() == Material.GOLD_BLOCK)
             b++;
@@ -147,10 +158,12 @@ public class CTTGame extends Game {
             b++;
         if (bLoc4.getBlock().getType() == Material.GOLD_BLOCK)
             b++;
+        debug("Blue score: " + b);
         return b;
     }
     
     public int getRedScoreFromBlocks() {
+        debug("Calculating red score");
         int r = 0;
         if (rLoc1.getBlock().getType() == Material.GOLD_BLOCK)
             r++;
@@ -160,6 +173,7 @@ public class CTTGame extends Game {
             r++;
         if (rLoc4.getBlock().getType() == Material.GOLD_BLOCK)
             r++;
+        debug("Red score: " + r);
         return r;
     }
     
@@ -173,6 +187,7 @@ public class CTTGame extends Game {
         rLoc2.getWorld().getBlockAt(rLoc2).setType(Material.GOLD_BLOCK);
         rLoc3.getWorld().getBlockAt(rLoc3).setType(Material.AIR);
         rLoc4.getWorld().getBlockAt(rLoc4).setType(Material.AIR);
+        debug("Goal blocks reset");
     }
 
     @Override
@@ -184,8 +199,8 @@ public class CTTGame extends Game {
         b.setBlocks(getBlueScoreFromBlocks());
         r.setBlocks(getRedScoreFromBlocks());
         if (time >= timeLimit) {
+            debug("Time limit reached");
             sendGameMessage(ChatColor.GOLD + "Time limit reached!");
-            plugin.debug("time: " + time + ", time limit: " + timeLimit);
             int bScore = b.getBlocks();
             int rScore = r.getBlocks();
             if (bScore > rScore) {
@@ -216,6 +231,7 @@ public class CTTGame extends Game {
         if (b.getBlocks() != 2 || r.getBlocks() != 2) {
             if (b.getPlayers().size() == 0 || r.getPlayers().size() == 0) {
                 sendGameMessage(ChatColor.GOLD + "A team has left!");
+                debug("There is an empty team and the game is not reset, game is now resetting");
                 resetGame(true);
             }
         }
@@ -246,6 +262,7 @@ public class CTTGame extends Game {
 
     @Override
     public void updateSign(Location l) {
+        debug("Attempting to update sign location");
         try {
             if (l != null) {
                 sql.query("UPDATE ctt SET sx=" + l.getX() + ", sy=" + l.getY() + ", sz=" + l.getZ() + ", signworld='" + l.getWorld().getName() + "' WHERE gameid=" + getGameId());
@@ -254,13 +271,17 @@ public class CTTGame extends Game {
             }
         } catch (SQLException e) {
             e.printStackTrace();
+            debug("Sign location update failed");
+            return;
         }
+        debug("Sign location updated");
     }
 
     public void resetScores() {
         b.setBlocks(2);
         r.setBlocks(2);
         resetGoalBlocks();
+        debug("Scores reset");
     }
     
     public CTTTeam getBlueTeam() {
@@ -292,9 +313,11 @@ public class CTTGame extends Game {
         player.getInventory().addItem(axe);
         player.getInventory().setHeldItemSlot(0);
         player.updateInventory();
+        debug(player.getName() + "'s inventory has been reset");
     }
     
     public void resetGame(boolean message) {
+        debug("Resetting game..");
         reset = true;
         time = 0;
         resetScores();
@@ -310,9 +333,12 @@ public class CTTGame extends Game {
         for (String i : list) {
             removePlayer(Bukkit.getPlayer(i));
         }
+        debug("Suffling teams..");
+        Collections.shuffle(list);
         for (String i : list) {
             addPlayer(Bukkit.getPlayer(i));
         }
         reset = false;
+        debug("Reset complete");
     }
 }

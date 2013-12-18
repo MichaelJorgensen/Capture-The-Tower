@@ -36,6 +36,7 @@ public class CTT extends JavaPlugin {
         sql = new SQL(this, dop);
         saveDefaultConfig();
         try {
+            debug("Opening SQL connection");
             sql.open();
             sql.createTable("CREATE TABLE IF NOT EXISTS ctt (gameid INT(23), x1 INT(23), y1 INT(23), z1 INT(23), yaw1 VARCHAR(255), pitch1 VARCHAR(255), gx1 FLOAT(23), gy1 FLOAT(23), gz1 FLOAT(23), x2 INT(23), y2 INT(23), z2 INT(23), yaw2 VARCHAR(255), pitch2 VARCHAR(255), gx2 FLOAT(23), gy2 FLOAT(23), gz2 FLOAT(23), spawnworld VARCHAR(255), sx INT(23), sy INT(23), sz INT(23), signworld VARCHAR(255))");
         } catch (SQLException e) {
@@ -44,13 +45,14 @@ public class CTT extends JavaPlugin {
             getServer().getPluginManager().disablePlugin(this);
             return;
         }
-        send("Setting up games...");
+        debug("Setting up games...");
         int gamesSetup = 0;
         try {
             ResultSet r = sql.query("SELECT gameid FROM ctt");
             while (r.next()) {
                 try {
                     int gameid = r.getInt(1);
+                    debug("Loading game " + gameid);
                     ResultSet rs = sql.query("SELECT * FROM ctt WHERE gameid=" + gameid);
                     ArrayList<Location> spawns = new ArrayList<Location>();
                     spawns.add(new Location(getServer().getWorld(rs.getString("spawnworld")), rs.getInt("x1"), rs.getInt("y1"), rs.getInt("z1"), rs.getFloat("yaw1"), rs.getFloat("pitch1")));
@@ -58,8 +60,9 @@ public class CTT extends JavaPlugin {
                     Location sign = new Location(getServer().getWorld(rs.getString("signworld")), rs.getInt("sx"), rs.getInt("sy"), rs.getInt("sz"));
                     Location bluegoal = new Location(getServer().getWorld(rs.getString("signworld")), rs.getDouble("gx1"), rs.getDouble("gy1"), rs.getDouble("gz1"));
                     Location redgoal = new Location(getServer().getWorld(rs.getString("signworld")), rs.getDouble("gx2"), rs.getDouble("gy2"), rs.getDouble("gz2"));
+                    debug(gameid + "'s spawns and locations loaded");
                     GameAPIMain.addRunner(new CTTGame(this, gameid, getMaxPlayers(), getTimeLimit(), sign, spawns, bluegoal, redgoal));
-                    send("Setup game: " + gameid);
+                    debug("Game " + gameid + " setup successfully");
                     gamesSetup++;
                 } catch (SQLException e) {
                     e.printStackTrace();
@@ -72,26 +75,28 @@ public class CTT extends JavaPlugin {
             getServer().getPluginManager().disablePlugin(this);
             return;
         }
-        send("Games setup: " + gamesSetup);
+        debug("Games setup: " + gamesSetup);
         getServer().getPluginManager().registerEvents(new CTTListener(this), this);
+        debug("Plugin finished loading");
     }
 
     public void onDisable() {
-        send("Closing database connection...");
+        debug("Closing database connection...");
         try {
             sql.close();
-            send("Connection closed");
+            debug("Connection closed");
         } catch (SQLException e) {
             e.printStackTrace();
-            send("Failed to close connection");
+            send("Failed to close connection with the database");
         }
+        debug("Plugin finished disabling");
     }
 
-    public void send(String message) {
+    public static void send(String message) {
         System.out.println("[CTT] " + message);
     }
 
-    public void debug(String message) {
+    public static void debug(String message) {
         send("[Debug] " + message);
     }
 
@@ -124,6 +129,7 @@ public class CTT extends JavaPlugin {
     }
 
     public void help(CommandSender s) {
+        debug("Help message sent to: " + s.getName());
         s.sendMessage(ChatColor.RED + "CTT Commands You Can Use");
         if (s.hasPermission("CTT.create")) {
             s.sendMessage(ChatColor.GOLD + "/ctt create [id]");
@@ -137,6 +143,7 @@ public class CTT extends JavaPlugin {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String commandLabel, String[] args) {
+        debug("Command called: " + sender.getName() + "; " + command.getName() + "; " + args.toString());
         if (args.length == 0) {
             help(sender);
             return true;
@@ -151,6 +158,7 @@ public class CTT extends JavaPlugin {
                     creating_spawns2_ids.remove(player.getName());
                     creating_goals_ids.remove(player.getName());
                     player.sendMessage(ChatColor.GREEN + "You have cancelled creating a game");
+                    debug("Cancelled creation of game for " + player.getName());
                     return true;
                 } else {
                     player.sendMessage(ChatColor.RED + "You aren't creating anything!");
@@ -184,6 +192,7 @@ public class CTT extends JavaPlugin {
                         }
                         creating_game_ids.put(player.getName(), id);
                         player.sendMessage(ChatColor.GREEN + "Game created, set spawns with /ctt setspawn");
+                        debug("Game creation process started, ID: " + id);
                         return true;
                     } else {
                         sender.sendMessage(ChatColor.GOLD + "/ctt create [id]");
@@ -203,17 +212,19 @@ public class CTT extends JavaPlugin {
             if (sender instanceof Player) {
                 Player player = (Player) sender;
                 if (creating_game_ids.containsKey(player.getName())) {
-                    if (creating_goals_ids.containsKey(player.getName())) {
+                    if (creating_spawns2_ids.containsKey(player.getName())) {
                         player.sendMessage(ChatColor.RED + "You have already completed this step. If this is a mistake, use /ctt cancel");
                         return true;
                     }
                     if (!creating_spawns_ids.containsKey(player.getName())) {
                         creating_spawns_ids.put(player.getName(), player.getLocation());
                         player.sendMessage(ChatColor.GREEN + "Location for blue team set. Use same command again to set red team's spawn\nTo cancel, use /ctt cancel");
+                        debug("Blue team location set by " + player.getName() + " for game " + creating_game_ids.get(player.getName()));
                         return true;
                     } else {
                         creating_spawns2_ids.put(player.getName(), player.getLocation());
-                        player.sendMessage(ChatColor.GREEN + "Location for red team set. Use '/ctt setgoal' to set goal locations");
+                        player.sendMessage(ChatColor.GREEN + "Location for red team set. Use '/ctt setgoal' to set goal locations (blue first)");
+                        debug("Red team location set by " + player.getName() + " for game " + creating_game_ids.get(player.getName()));
                         return true;
                     }
                 } else {
@@ -234,6 +245,7 @@ public class CTT extends JavaPlugin {
                         if (!creating_goals_ids.containsKey(player.getName())) {
                             creating_goals_ids.put(player.getName(), player.getLocation());
                             player.sendMessage(ChatColor.GREEN + "Blue goal set, use same command for red goal");
+                            debug("Blue team goal location set by " + player.getName() + " for game " + creating_game_ids.get(player.getName()));
                             return true;
                         } else {
                             String n = player.getName();
@@ -246,11 +258,13 @@ public class CTT extends JavaPlugin {
                             creating_spawns_ids.remove(n);
                             creating_spawns2_ids.remove(n);
                             creating_goals_ids.remove(n);
+                            debug("Red team goal location set by " + player.getName() + " for game " + id + ", setting game up..");
                             ArrayList<Location> teamspawns = new ArrayList<Location>();
                             teamspawns.add(spawn1);
                             teamspawns.add(spawn2);
                             CTTGame game = new CTTGame(this, id, getMaxPlayers(), getTimeLimit(), null, teamspawns, goal1, goal2);
                             GameAPIMain.addRunner(game);
+                            debug("Game created and added to runner list");
                             try {
                                 sql.query("INSERT INTO ctt (gameid, x1, y1, z1, yaw1, pitch1, gx1, gy1, gz1, x2, y2, z2, yaw2, pitch2, gx2, gy2, gz2, spawnworld, sx, sy, sz, signworld) VALUES (" + id + ", " + (int) spawn1.getX() + ", " + (int) spawn1.getY() + ", " + (int) spawn1.getZ() + ", '" + spawn1.getYaw() + "', '" + spawn1.getPitch() + "', " + goal1.getX() + ", " + goal1.getY() + ", " + goal1.getZ() + ", " + (int) spawn2.getX() + ", " + (int) spawn2.getY() + ", " + (int) spawn2.getZ() + ", '" + spawn2.getYaw() + "', '" + spawn2.getPitch() + "', " + goal2.getX() + ", " + goal2.getY() + ", " + goal2.getZ() + ", '" + spawn1.getWorld().getName() + "', " + "0, 0, 0, 'unknown-world')");
                             } catch (SQLException e) {
@@ -259,6 +273,7 @@ public class CTT extends JavaPlugin {
                                 player.sendMessage(ChatColor.RED + "Failed to add game to the database: " + e.getMessage());
                                 return true;
                             }
+                            debug("Game added to database. All is well");
                             player.sendMessage(ChatColor.GREEN + "Game created! Please create the sign now");
                             return true;
                         }
@@ -289,6 +304,7 @@ public class CTT extends JavaPlugin {
                     Game game = GameAPIMain.getRunners().get(id);
                     if (game != null) {
                         if (game instanceof CTTGame) {
+                            debug("Removing runner for game " + id);
                             GameAPIMain.removeRunner(game.getGameId());
                             try {
                                 sql.query("DELETE FROM ctt WHERE gameid=" + id);
@@ -298,6 +314,7 @@ public class CTT extends JavaPlugin {
                                 return true;
                             }
                             sender.sendMessage(ChatColor.GREEN + "Game has been removed");
+                            debug(id + " has been removed");
                             return true;
                         } else {
                             sender.sendMessage(ChatColor.RED + "That game is not a CTT game. Use that game's plugin to delete it");
