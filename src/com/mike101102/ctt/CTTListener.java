@@ -15,8 +15,8 @@ import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.player.PlayerCommandPreprocessEvent;
 import org.bukkit.inventory.ItemStack;
 
-import com.homie.gameapi.Game;
-import com.homie.gameapi.GameAPIMain;
+import com.mike101102.ctt.gameapi.Game;
+import com.mike101102.ctt.gameapi.GameAPIMain;
 
 public class CTTListener implements Listener {
 

@@ -1,6 +1,6 @@
 package com.mike101102.ctt;
 
-import com.homie.gameapi.GameTeam;
+import com.mike101102.ctt.gameapi.GameTeam;
 
 public class CTTTeam extends GameTeam {
 

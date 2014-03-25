@@ -19,10 +19,10 @@ import org.bukkit.scoreboard.Objective;
 import org.bukkit.scoreboard.Score;
 import org.bukkit.scoreboard.Scoreboard;
 
-import com.homie.gameapi.Game;
-import com.homie.gameapi.GameStage;
-import com.homie.gameapi.PlayerData;
-import com.homie.gameapi.sql.SQL;
+import com.mike101102.ctt.gameapi.Game;
+import com.mike101102.ctt.gameapi.GameStage;
+import com.mike101102.ctt.gameapi.PlayerData;
+import com.mike101102.ctt.gameapi.sql.SQL;
 
 public class CTTGame extends Game {
 
