@@ -27,7 +27,7 @@ public class CTT extends JavaPlugin {
 
     private SQL sql;
     private DatabaseOptions dop;
-    private boolean debug;
+    private static boolean debug;
 
     public HashMap<String, Integer> creating_game_ids = new HashMap<String, Integer>();
     public HashMap<String, Location> creating_spawns_ids = new HashMap<String, Location>();
@@ -62,8 +62,8 @@ public class CTT extends JavaPlugin {
                     spawns.add(new Location(getServer().getWorld(rs.getString("spawnworld")), rs.getInt("x1"), rs.getInt("y1"), rs.getInt("z1"), rs.getFloat("yaw1"), rs.getFloat("pitch1")));
                     spawns.add(new Location(getServer().getWorld(rs.getString("spawnworld")), rs.getInt("x2"), rs.getInt("y2"), rs.getInt("z2"), rs.getFloat("yaw2"), rs.getFloat("pitch2")));
                     Location sign = new Location(getServer().getWorld(rs.getString("signworld")), rs.getInt("sx"), rs.getInt("sy"), rs.getInt("sz"));
-                    Location bluegoal = new Location(getServer().getWorld(rs.getString("signworld")), rs.getDouble("gx1"), rs.getDouble("gy1"), rs.getDouble("gz1"));
-                    Location redgoal = new Location(getServer().getWorld(rs.getString("signworld")), rs.getDouble("gx2"), rs.getDouble("gy2"), rs.getDouble("gz2"));
+                    Location bluegoal = new Location(getServer().getWorld(rs.getString("spawnworld")), rs.getDouble("gx1"), rs.getDouble("gy1"), rs.getDouble("gz1"));
+                    Location redgoal = new Location(getServer().getWorld(rs.getString("spawnworld")), rs.getDouble("gx2"), rs.getDouble("gy2"), rs.getDouble("gz2"));
                     debug(gameid + "'s spawns and locations loaded");
                     GameAPIMain.addRunner(new CTTGame(this, gameid, getMaxPlayers(), getTimeLimit(), sign, spawns, bluegoal, redgoal));
                     debug("Game " + gameid + " setup successfully");
@@ -85,6 +85,12 @@ public class CTT extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new GameListener(), this);
         if (debug) {
             getServer().getPluginManager().registerEvents(new DebugListener(), this);
+            getServer().getScheduler().scheduleSyncRepeatingTask(this, new Runnable() {
+                @Override
+                public void run() {
+                    CTT.debug("Games: " + GameAPIMain.getRunners().size());
+                }
+            }, 200L, 200L);
         }
         debug("Plugin finished loading");
     }
@@ -108,7 +114,8 @@ public class CTT extends JavaPlugin {
     }
 
     public static void debug(String message) {
-        send("[Debug] " + message);
+        if (debug)
+            send("[Debug] " + message);
     }
 
     public SQL getSQL() {
@@ -140,7 +147,6 @@ public class CTT extends JavaPlugin {
     }
 
     public void help(CommandSender s) {
-        debug("Help message sent to: " + s.getName());
         s.sendMessage(ChatColor.RED + "CTT Commands You Can Use");
         if (s.hasPermission("CTT.create")) {
             s.sendMessage(ChatColor.GOLD + "/ctt create [id]");
@@ -163,6 +169,121 @@ public class CTT extends JavaPlugin {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String commandLabel, String[] args) {
         debug("Command called: " + sender.getName() + "; " + command.getName() + "; " + args.toString());
+        if (command.getName().equalsIgnoreCase("join")) {
+            if (sender instanceof Player) {
+                Player player = (Player) sender;
+                if (!player.hasPermission("ctt.join")) {
+                    player.sendMessage(ChatColor.RED + "You do not have permission (ctt.join)");
+                    return true;
+                }
+                if (args.length == 1) {
+                    try {
+                        int i = Integer.parseInt(args[0]);
+                        if (GameAPIMain.getRunners().containsKey(i)) {
+                            Game game = GameAPIMain.getRunners().get(i);
+                            for (Entry<Integer, Game> en : GameAPIMain.getRunners().entrySet()) {
+                                if (game.getPlayers().contains(player.getName())) {
+                                    player.sendMessage(ChatColor.RED + "You are already in that game!");
+                                    return true;
+                                }
+                                if (en.getValue().getPlayers().contains(player.getName())) {
+                                    player.sendMessage(ChatColor.RED + "You are already in game " + en.getValue().getGameId() + "!");
+                                    return true;
+                                }
+                            }
+                            if (!EventHandle.callPlayerJoinGameEvent(game, player).isCancelled()) {
+                                game.addPlayer(player);
+                            }
+                            return true;
+                        } else {
+                            player.sendMessage(ChatColor.RED + "That game doesn't exist!");
+                            return true;
+                        }
+                    } catch (Exception e) {
+                        player.sendMessage(ChatColor.RED + args[0] + " is not a number");
+                        return true;
+                    }
+                } else {
+                    player.sendMessage(ChatColor.GOLD + "/join [id]");
+                    return true;
+                }
+            } else {
+                sender.sendMessage(ChatColor.RED + "You must be a player to join a game!");
+                return true;
+            }
+        }
+
+        if (command.getName().equalsIgnoreCase("leave")) {
+            if (sender instanceof Player) {
+                Player player = (Player) sender;
+                for (Entry<Integer, Game> en : GameAPIMain.getRunners().entrySet()) {
+                    if (en.getValue().getPlayers().contains(player.getName())) {
+                        if (!EventHandle.callPlayerLeaveGameEvent(en.getValue(), player).isCancelled()) {
+                            en.getValue().removePlayer(player);
+                        }
+                        return true;
+                    }
+                }
+                player.sendMessage(ChatColor.RED + "You aren't in any games");
+                return true;
+            } else {
+                sender.sendMessage(ChatColor.RED + "You must be a player to leave a game!");
+                return true;
+            }
+        }
+
+        if (command.getName().equalsIgnoreCase("games")) {
+            if (sender.hasPermission("ctt.list")) {
+                if (GameAPIMain.getRunners().size() == 0) {
+                    sender.sendMessage(ChatColor.GOLD + "Games: " + ChatColor.GREEN + "None");
+                    return true;
+                }
+                sender.sendMessage(ChatColor.GOLD + "Format: gameid:isRunning,...");
+                StringBuilder sb = new StringBuilder();
+                sb.append(ChatColor.GOLD + "Games: " + ChatColor.GREEN);
+                for (Entry<Integer, Game> en : GameAPIMain.getRunners().entrySet()) {
+                    sb.append(en.getValue().getGameId() + ":" + en.getValue().isRunning() + ",");
+                }
+                sb.deleteCharAt(sb.length() - 1);
+                sender.sendMessage(sb.toString());
+                return true;
+            } else {
+                sender.sendMessage(ChatColor.RED + "You do not have permission (ctt.list)");
+                return true;
+            }
+        }
+
+        if (command.getName().equalsIgnoreCase("gameinfo")) {
+            if (sender.hasPermission("ctt.info")) {
+                if (args.length == 1) {
+                    try {
+                        int gameid = Integer.parseInt(args[0]);
+                        if (GameAPIMain.getRunners().containsKey(gameid)) {
+                            Game game = GameAPIMain.getRunners().get(gameid);
+                            sender.sendMessage(ChatColor.GOLD + "Name: " + ChatColor.GREEN + game.getName());
+                            sender.sendMessage(ChatColor.GOLD + "ID: " + ChatColor.GREEN.toString() + game.getGameId());
+                            sender.sendMessage(ChatColor.GOLD + "Players: " + ChatColor.GREEN.toString() + game.getPlayers().size() + "/" + game.getMaxPlayers());
+                            sender.sendMessage(ChatColor.GOLD + "Running: " + ChatColor.GREEN.toString() + game.isRunning());
+                            sender.sendMessage(ChatColor.GOLD + "Game Stage: " + ChatColor.GREEN.toString() + game.getGameStage());
+                            return true;
+                        } else {
+                            sender.sendMessage(ChatColor.RED.toString() + gameid + " is not a valid game ID!");
+                            return true;
+                        }
+                    } catch (NumberFormatException e) {
+                        sender.sendMessage(ChatColor.RED + args[0] + " is not a number");
+                        return true;
+                    }
+                } else {
+                    sender.sendMessage(ChatColor.GOLD + "/gameinfo [id]");
+                    return true;
+                }
+            } else {
+                sender.sendMessage(ChatColor.RED + "You do not have permission (ctt.info)");
+                return true;
+            }
+        }
+
         if (args.length == 0) {
             help(sender);
             return true;
@@ -349,117 +470,6 @@ public class CTT extends JavaPlugin {
                 }
             } else {
                 sender.sendMessage(ChatColor.RED + "You do not have permission (ctt.delete)");
-                return true;
-            }
-        }
-        
-        else if (command.getName().equalsIgnoreCase("join")) {
-            if (sender instanceof Player) {
-                Player player = (Player) sender;
-                if (!player.hasPermission("ctt.join")) {
-                    player.sendMessage(ChatColor.RED + "You do not have permission (ctt.join)");
-                    return true;
-                }
-                if (args.length == 1) {
-                    try {
-                        int i = Integer.parseInt(args[0]);
-                        if (GameAPIMain.getRunners().containsKey(i)) {
-                            Game game = GameAPIMain.getRunners().get(i);
-                            for (Entry<Integer, Game> en : GameAPIMain.getRunners().entrySet()) {
-                                if (game.getPlayers().contains(player.getName())) {
-                                    player.sendMessage(ChatColor.RED + "You are already in that game!");
-                                    return true;
-                                }
-                                if (en.getValue().getPlayers().contains(player.getName())) {
-                                    player.sendMessage(ChatColor.RED + "You are already in game " + en.getValue().getGameId() + "!");
-                                    return true;
-                                }
-                            }
-                            if (!EventHandle.callPlayerJoinGameEvent(game, player).isCancelled()) {
-                                game.addPlayer(player);
-                            }
-                            return true;
-                        } else {
-                            player.sendMessage(ChatColor.RED + "That game doesn't exist!");
-                            return true;
-                        }
-                    } catch (Exception e) {
-                        player.sendMessage(ChatColor.RED + args[0] + " is not a number");
-                        return true;
-                    }
-                } else {
-                    player.sendMessage(ChatColor.GOLD + "/join [id]");
-                    return true;
-                }
-            } else {
-                sender.sendMessage(ChatColor.RED + "You must be a player to join a game!");
-                return true;
-            }
-        }
-
-        if (command.getName().equalsIgnoreCase("leave")) {
-            if (sender instanceof Player) {
-                Player player = (Player) sender;
-                for (Entry<Integer, Game> en : GameAPIMain.getRunners().entrySet()) {
-                    if (en.getValue().getPlayers().contains(player.getName())) {
-                        if (!EventHandle.callPlayerLeaveGameEvent(en.getValue(), player).isCancelled()) {
-                            en.getValue().removePlayer(player);
-                        }
-                        return true;
-                    }
-                }
-                player.sendMessage(ChatColor.RED + "You aren't in any games");
-                return true;
-            } else {
-                sender.sendMessage(ChatColor.RED + "You must be a player to leave a game!");
-                return true;
-            }
-        }
-
-        if (command.getName().equalsIgnoreCase("games")) {
-            if (sender.hasPermission("ctt.list")) {
-                sender.sendMessage(ChatColor.GOLD + "Format: gameid:isRunning,...");
-                StringBuilder sb = new StringBuilder();
-                sb.append(ChatColor.GOLD + "Games: " + ChatColor.GREEN);
-                for (Entry<Integer, Game> en : GameAPIMain.getRunners().entrySet()) {
-                    sb.append(en.getValue().getGameId() + ":" + en.getValue().isRunning() + ",");
-                }
-                sb.deleteCharAt(sb.length() - 1);
-                sender.sendMessage(sb.toString());
-                return true;
-            } else {
-                sender.sendMessage(ChatColor.RED + "You do not have permission (ctt.list)");
-                return true;
-            }
-        }
-
-        if (command.getName().equalsIgnoreCase("gameinfo")) {
-            if (sender.hasPermission("ctt.info")) {
-                if (args.length == 1) {
-                    try {
-                        int gameid = Integer.parseInt(args[0]);
-                        if (GameAPIMain.getRunners().containsKey(gameid)) {
-                            Game game = GameAPIMain.getRunners().get(gameid);
-                            sender.sendMessage(ChatColor.GOLD + "Name: " + ChatColor.GREEN + game.getName());
-                            sender.sendMessage(ChatColor.GOLD + "ID: " + ChatColor.GREEN.toString() + game.getGameId());
-                            sender.sendMessage(ChatColor.GOLD + "Players: " + ChatColor.GREEN.toString() + game.getPlayers().size() + "/" + game.getMaxPlayers());
-                            sender.sendMessage(ChatColor.GOLD + "Running: " + ChatColor.GREEN.toString() + game.isRunning());
-                            sender.sendMessage(ChatColor.GOLD + "Game Stage: " + ChatColor.GREEN.toString() + game.getGameStage());
-                            return true;
-                        } else {
-                            sender.sendMessage(ChatColor.RED.toString() + gameid + " is not a valid game ID!");
-                            return true;
-                        }
-                    } catch (NumberFormatException e) {
-                        sender.sendMessage(ChatColor.RED + args[0] + " is not a number");
-                        return true;
-                    }
-                } else {
-                    sender.sendMessage(ChatColor.GOLD + "/gameinfo [id]");
-                    return true;
-                }
-            } else {
-                sender.sendMessage(ChatColor.RED + "You do not have permission (ctt.info)");
                 return true;
             }
         }

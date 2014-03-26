@@ -3,13 +3,10 @@ package com.mike101102.ctt.gameapi;
 import java.util.HashMap;
 import java.util.Map.Entry;
 
-import org.bukkit.inventory.ItemStack;
-
 import com.mike101102.ctt.gameapi.events.EventHandle;
 
 public class GameAPIMain {
 
-    public static ItemStack gameBook;
     private static HashMap<Integer, Game> runningGames = new HashMap<Integer, Game>();
 
     public static void onDisable() {

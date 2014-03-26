@@ -1,12 +1,28 @@
 name: CaptureTheTower
 version: 1.0.0
+description: Capture the Tower game
 author: mike101102
 main: com.mike101102.ctt.CTT
-depend: [GameAPI]
+prefix: CTT
 commands:
     ctt:
         description: Main command for CTT
         usage: /<command>
+    join:
+        description: Command for joining a game
+        usage: /<command> [id]
+        aliases: [j]
+    leave:
+        description: Command for leaving a game
+        usage: /<command>
+        aliases: [l]
+    games:
+        description: Lists out all current games using the API
+        usage: /<command>
+    gameinfo:
+        description: Gives detailed info on the given game
+        usage: /<command> [id]
+        aliases: [info]
 permissions:
     ctt.*:
         description: Gives access to all CTT commands
@@ -14,9 +30,21 @@ permissions:
         children:
             ctt.create: true
             ctt.delete: true
+            ctt.join: true
+            ctt.list: true
+            ctt.info: true
     ctt.create:
         description: Allows you to create new games
         default: op
     ctt.delete:
         description: Allows you to delete games
+        default: op
+    ctt.join:
+        description: Allows you to join a game
+        default: true
+    ctt.list:
+        description: Allows you to use /games
+        default: op
+    ctt.info:
+        description: Allows you to view info on games
         default: op
