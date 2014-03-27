@@ -74,7 +74,6 @@ public class CTTGame extends Game {
         obj.setDisplaySlot(DisplaySlot.SIDEBAR);
         blueScore = obj.getScore(Bukkit.getOfflinePlayer(ChatColor.BLUE + "Blue"));
         redScore = obj.getScore(Bukkit.getOfflinePlayer(ChatColor.RED + "Red"));
-        debug("Objectives and scores setup");
         bLoc1 = blueGoal;
         bLoc2 = new Location(bLoc1.getWorld(), bLoc1.getX(), bLoc1.getY() + 1, bLoc1.getZ());
         bLoc3 = new Location(bLoc1.getWorld(), bLoc2.getX(), bLoc2.getY() + 1, bLoc2.getZ());
@@ -148,7 +147,6 @@ public class CTTGame extends Game {
     }
     
     public int getBlueScoreFromBlocks() {
-        debug("Calculating blue score");
         int b = 0;
         if (bLoc1.getBlock().getType() == Material.GOLD_BLOCK)
             b++;
@@ -158,12 +156,10 @@ public class CTTGame extends Game {
             b++;
         if (bLoc4.getBlock().getType() == Material.GOLD_BLOCK)
             b++;
-        debug("Blue score: " + b);
         return b;
     }
     
     public int getRedScoreFromBlocks() {
-        debug("Calculating red score");
         int r = 0;
         if (rLoc1.getBlock().getType() == Material.GOLD_BLOCK)
             r++;
@@ -173,7 +169,6 @@ public class CTTGame extends Game {
             r++;
         if (rLoc4.getBlock().getType() == Material.GOLD_BLOCK)
             r++;
-        debug("Red score: " + r);
         return r;
     }
     
@@ -317,7 +312,7 @@ public class CTTGame extends Game {
     }
     
     public void resetGame(boolean message) {
-        debug("Resetting game..");
+        debug("Resetting game " + getGameId());
         reset = true;
         time = 0;
         resetScores();

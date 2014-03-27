@@ -1,4 +1,18 @@
+# 
+# For local SQLite, set 'sql' equal to 'SQLite'.
+# For remote or local MySQL, set 'sql' equal to 'MySQL' and set the MySQL options accordingly.
+# 
+# Questions, concerns, ideas, etc, please use the ticket system, comments, or PM me on BukkitDev
+#  http://dev.bukkit.org/bukkit-plugins/ctt/
+# 
 debug: false
 time-limit: 180
 max-players: 10
 kill-message: '%killer% has crucified %victim%'
+sql: SQLite
+MySQL:
+    hostname: 'localhost'
+    port: '3306'
+    database: 'CTT'
+    username: 'minecraft'
+    password: 'notch'

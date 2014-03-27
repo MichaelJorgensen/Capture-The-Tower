@@ -11,6 +11,7 @@ import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -21,6 +22,7 @@ import com.mike101102.ctt.gameapi.events.DebugListener;
 import com.mike101102.ctt.gameapi.events.EventHandle;
 import com.mike101102.ctt.gameapi.sql.SQL;
 import com.mike101102.ctt.gameapi.sql.options.DatabaseOptions;
+import com.mike101102.ctt.gameapi.sql.options.MySQLOptions;
 import com.mike101102.ctt.gameapi.sql.options.SQLiteOptions;
 
 public class CTT extends JavaPlugin {
@@ -35,10 +37,25 @@ public class CTT extends JavaPlugin {
     public HashMap<String, Location> creating_goals_ids = new HashMap<String, Location>();
 
     public void onEnable() {
-        debug = shouldDebug();
-        dop = new SQLiteOptions(new File(getDataFolder() + "/game_data.db"));
-        sql = new SQL(this, dop);
         saveDefaultConfig();
+        debug = shouldDebug();
+        String s = getConfig().getString("sql");
+        if (s != null) {
+            if (s.equalsIgnoreCase("mysql")) {
+                debug("Selecting MySQL");
+                setupMySQL();
+            } else if (s.equalsIgnoreCase("sqlite")) {
+                debug("Selecting SQLite");
+                setupSQLite();
+            } else {
+                send("ERROR! SQL SET TO '" + s + "' WHICH IS UNKNOWN. PLEASE SET TO MYSQL OR SQLITE. DEFAULTING TO SQLITE!");
+                setupSQLite();
+            }
+        } else {
+            send("ERROR! SQL NOT SET TO ANYTHING IN THE CONFIG. DEFAULTING TO SQLITE!");
+            setupSQLite();
+        }
+        sql = new SQL(this, dop);
         try {
             debug("Opening SQL connection");
             sql.open();
@@ -58,6 +75,8 @@ public class CTT extends JavaPlugin {
                     int gameid = r.getInt(1);
                     debug("Loading game " + gameid);
                     ResultSet rs = sql.query("SELECT * FROM ctt WHERE gameid=" + gameid);
+                    if (dop instanceof MySQLOptions)
+                        rs.first();
                     ArrayList<Location> spawns = new ArrayList<Location>();
                     spawns.add(new Location(getServer().getWorld(rs.getString("spawnworld")), rs.getInt("x1"), rs.getInt("y1"), rs.getInt("z1"), rs.getFloat("yaw1"), rs.getFloat("pitch1")));
                     spawns.add(new Location(getServer().getWorld(rs.getString("spawnworld")), rs.getInt("x2"), rs.getInt("y2"), rs.getInt("z2"), rs.getFloat("yaw2"), rs.getFloat("pitch2")));
@@ -80,7 +99,6 @@ public class CTT extends JavaPlugin {
             return;
         }
         debug("Games setup: " + gamesSetup);
-        debug("Setting up GameAPI");
         getServer().getPluginManager().registerEvents(new CTTListener(this), this);
         getServer().getPluginManager().registerEvents(new GameListener(), this);
         if (debug) {
@@ -90,9 +108,8 @@ public class CTT extends JavaPlugin {
                 public void run() {
                     CTT.debug("Games: " + GameAPIMain.getRunners().size());
                 }
-            }, 200L, 200L);
+            }, 250L, 5000L);
         }
-        debug("Plugin finished loading");
     }
 
     public void onDisable() {
@@ -106,7 +123,15 @@ public class CTT extends JavaPlugin {
         }
         GameAPIMain.onDisable();
         getServer().getScheduler().cancelTasks(this);
-        debug("Plugin finished disabling");
+    }
+
+    private void setupSQLite() {
+        dop = new SQLiteOptions(new File(getDataFolder() + "/game_data.db"));
+    }
+
+    private void setupMySQL() {
+        FileConfiguration c = getConfig();
+        dop = new MySQLOptions(c.getString("MySQL.hostname"), c.getString("MySQL.port"), c.getString("MySQL.database"), c.getString("MySQL.username"), c.getString("MySQL.password"));
     }
 
     public static void send(String message) {
@@ -148,17 +173,19 @@ public class CTT extends JavaPlugin {
 
     public void help(CommandSender s) {
         s.sendMessage(ChatColor.RED + "CTT Commands You Can Use");
-        if (s.hasPermission("CTT.create")) {
+        if (s.hasPermission("ctt.create")) {
             s.sendMessage(ChatColor.GOLD + "/ctt create [id]");
             s.sendMessage(ChatColor.GOLD + "/ctt setspawn");
             s.sendMessage(ChatColor.GOLD + "/ctt setgoal");
             s.sendMessage(ChatColor.GOLD + "/ctt cancel");
         }
-        if (s.hasPermission("CTT.delete"))
+        if (s.hasPermission("ctt.delete"))
             s.sendMessage(ChatColor.GOLD + "/ctt delete [id]");
+        if (s.hasPermission("ctt.reset"))
+            s.sendMessage(ChatColor.GOLD + "/ctt reset [id]");
         if (s.hasPermission("ctt.join")) {
-            s.sendMessage(ChatColor.GOLD + "/j [id]");
-            s.sendMessage(ChatColor.GOLD + "/l");
+            s.sendMessage(ChatColor.GOLD + "/join [id]");
+            s.sendMessage(ChatColor.GOLD + "/leave");
         }
         if (s.hasPermission("ctt.list"))
             s.sendMessage(ChatColor.GOLD + "/games");
@@ -168,7 +195,7 @@ public class CTT extends JavaPlugin {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String commandLabel, String[] args) {
-        debug("Command called: " + sender.getName() + "; " + command.getName() + "; " + args.toString());
+        debug("Command called: " + sender.getName() + "; " + command.getName());
         if (command.getName().equalsIgnoreCase("join")) {
             if (sender instanceof Player) {
                 Player player = (Player) sender;
@@ -331,7 +358,7 @@ public class CTT extends JavaPlugin {
                             return true;
                         }
                         creating_game_ids.put(player.getName(), id);
-                        player.sendMessage(ChatColor.GREEN + "Game created, set spawns with /ctt setspawn");
+                        player.sendMessage(ChatColor.GREEN + "Game created, set blue spawn with /ctt setspawn");
                         debug("Game creation process started, ID: " + id);
                         return true;
                     } else {
@@ -363,7 +390,7 @@ public class CTT extends JavaPlugin {
                         return true;
                     } else {
                         creating_spawns2_ids.put(player.getName(), player.getLocation());
-                        player.sendMessage(ChatColor.GREEN + "Location for red team set. Use '/ctt setgoal' to set goal locations (blue first)");
+                        player.sendMessage(ChatColor.GREEN + "Location for red team set. Use '/ctt setgoal' to set blue team's goal location");
                         debug("Red team location set by " + player.getName() + " for game " + creating_game_ids.get(player.getName()));
                         return true;
                     }
@@ -414,7 +441,7 @@ public class CTT extends JavaPlugin {
                                 return true;
                             }
                             debug("Game added to database. All is well");
-                            player.sendMessage(ChatColor.GREEN + "Game created! Please create the sign now");
+                            player.sendMessage(ChatColor.GREEN + "Game created! You can create the sign now:\n[game]\n" + id);
                             return true;
                         }
                     } else {
@@ -470,6 +497,41 @@ public class CTT extends JavaPlugin {
                 }
             } else {
                 sender.sendMessage(ChatColor.RED + "You do not have permission (ctt.delete)");
+                return true;
+            }
+        }
+
+        else if (args[0].equalsIgnoreCase("reset")) {
+            if (sender.hasPermission("ctt.reset")) {
+                if (args.length == 2) {
+                    int id;
+                    try {
+                        id = Integer.parseInt(args[1]);
+                    } catch (NumberFormatException e) {
+                        sender.sendMessage(ChatColor.GOLD + args[1] + ChatColor.RED + " is not an id");
+                        return true;
+                    }
+                    Game game = GameAPIMain.getRunners().get(id);
+                    if (game != null) {
+                        if (game instanceof CTTGame) {
+                            debug("Resetting game " + id);
+                            ((CTTGame) game).resetGame(true);
+                            sender.sendMessage(ChatColor.GOLD.toString() + id + ChatColor.GREEN + " has been reset");
+                            return true;
+                        } else {
+                            sender.sendMessage(ChatColor.RED + "That game is not a CTT game. Use that game's plugin to delete it");
+                            return true;
+                        }
+                    } else {
+                        sender.sendMessage(ChatColor.RED + "That game with that id does not exist");
+                        return true;
+                    }
+                } else {
+                    sender.sendMessage(ChatColor.GOLD + "/ctt reset [id]");
+                    return true;
+                }
+            } else {
+                sender.sendMessage(ChatColor.RED + "You do not have permission (ctt.rest)");
                 return true;
             }
         }

@@ -30,7 +30,6 @@ public class CTTListener implements Listener {
         okayNoArgCommands.add("/leave");
         okayArgCommands.add("/j");
         okayArgCommands.add("/join");
-        CTT.debug("CTTListener activated");
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
