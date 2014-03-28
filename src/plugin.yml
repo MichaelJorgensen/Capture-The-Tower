@@ -30,6 +30,7 @@ permissions:
         children:
             ctt.create: true
             ctt.delete: true
+            ctt.reset: true
             ctt.join: true
             ctt.list: true
             ctt.info: true
@@ -38,6 +39,9 @@ permissions:
         default: op
     ctt.delete:
         description: Allows you to delete games
+        default: op
+    ctt.reset:
+        description: Allows you to reset games
         default: op
     ctt.join:
         description: Allows you to join a game
