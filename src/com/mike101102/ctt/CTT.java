@@ -77,6 +77,10 @@ public class CTT extends JavaPlugin {
                     ResultSet rs = sql.query("SELECT * FROM ctt WHERE gameid=" + gameid);
                     if (dop instanceof MySQLOptions)
                         rs.first();
+                    if (getServer().getWorld(rs.getString("spawnworld")) == null) {
+                        send("Game ID " + gameid + "'s world does not exist. Will skip loading this game! To remove this message, delete this gameid or bring the world back.");
+                        continue;
+                    }
                     ArrayList<Location> spawns = new ArrayList<Location>();
                     spawns.add(new Location(getServer().getWorld(rs.getString("spawnworld")), rs.getInt("x1"), rs.getInt("y1"), rs.getInt("z1"), rs.getFloat("yaw1"), rs.getFloat("pitch1")));
                     spawns.add(new Location(getServer().getWorld(rs.getString("spawnworld")), rs.getInt("x2"), rs.getInt("y2"), rs.getInt("z2"), rs.getFloat("yaw2"), rs.getFloat("pitch2")));
@@ -169,6 +173,21 @@ public class CTT extends JavaPlugin {
 
     public String convert(String string) {
         return ChatColor.translateAlternateColorCodes("^".charAt(0), string);
+    }
+    
+    public void cancelCreation(Player player) {
+        if (creating_game_ids.containsKey(player.getName()) || creating_spawns_ids.containsKey(player.getName()) || creating_spawns2_ids.containsKey(player.getName()) || creating_goals_ids.containsKey(player.getName())) {
+            creating_game_ids.remove(player.getName());
+            creating_spawns_ids.remove(player.getName());
+            creating_spawns2_ids.remove(player.getName());
+            creating_goals_ids.remove(player.getName());
+            player.sendMessage(ChatColor.GREEN + "You have cancelled creating a game");
+            debug("Cancelled creation of game for " + player.getName());
+            return;
+        } else {
+            player.sendMessage(ChatColor.RED + "You aren't creating anything!");
+            return;
+        }
     }
 
     public void help(CommandSender s) {
@@ -287,11 +306,13 @@ public class CTT extends JavaPlugin {
                         int gameid = Integer.parseInt(args[0]);
                         if (GameAPIMain.getRunners().containsKey(gameid)) {
                             Game game = GameAPIMain.getRunners().get(gameid);
-                            sender.sendMessage(ChatColor.GOLD + "Name: " + ChatColor.GREEN + game.getName());
-                            sender.sendMessage(ChatColor.GOLD + "ID: " + ChatColor.GREEN.toString() + game.getGameId());
                             sender.sendMessage(ChatColor.GOLD + "Players: " + ChatColor.GREEN.toString() + game.getPlayers().size() + "/" + game.getMaxPlayers());
                             sender.sendMessage(ChatColor.GOLD + "Running: " + ChatColor.GREEN.toString() + game.isRunning());
                             sender.sendMessage(ChatColor.GOLD + "Game Stage: " + ChatColor.GREEN.toString() + game.getGameStage());
+                            if (game instanceof CTTGame) {
+                                CTTGame g = (CTTGame) game;
+                                sender.sendMessage(ChatColor.GOLD + "Scores: " + ChatColor.BLUE + g.getBlueScoreFromBlocks() + " " + ChatColor.RED + g.getRedScoreFromBlocks());
+                            }
                             return true;
                         } else {
                             sender.sendMessage(ChatColor.RED.toString() + gameid + " is not a valid game ID!");
@@ -318,19 +339,8 @@ public class CTT extends JavaPlugin {
 
         if (args[0].equalsIgnoreCase("cancel")) {
             if (sender instanceof Player) {
-                Player player = (Player) sender;
-                if (creating_game_ids.containsKey(player.getName()) || creating_spawns_ids.containsKey(player.getName()) || creating_spawns2_ids.containsKey(player.getName()) || creating_goals_ids.containsKey(player.getName())) {
-                    creating_game_ids.remove(player.getName());
-                    creating_spawns_ids.remove(player.getName());
-                    creating_spawns2_ids.remove(player.getName());
-                    creating_goals_ids.remove(player.getName());
-                    player.sendMessage(ChatColor.GREEN + "You have cancelled creating a game");
-                    debug("Cancelled creation of game for " + player.getName());
-                    return true;
-                } else {
-                    player.sendMessage(ChatColor.RED + "You aren't creating anything!");
-                    return true;
-                }
+                cancelCreation((Player) sender);
+                return true;
             } else {
                 sender.sendMessage(ChatColor.RED + "You must be a player!");
                 return true;
@@ -356,6 +366,18 @@ public class CTT extends JavaPlugin {
                         if (GameAPIMain.getRunners().containsKey(id)) {
                             player.sendMessage(ChatColor.GOLD.toString() + id + ChatColor.RED + " is already a game id");
                             return true;
+                        } else {
+                            try {
+                                ResultSet rs = sql.query("SELECT * FROM ctt WHERE gameid=" + id);
+                                if (rs.first()) {
+                                    player.sendMessage(ChatColor.GOLD.toString() + id + ChatColor.RED + " is already a game id");
+                                    return true;
+                                }
+                            } catch (SQLException e) {
+                                e.printStackTrace();
+                                player.sendMessage(ChatColor.RED + "Could not determine if the ID was in the database already or not. Please check the console for the error.");
+                                return true;
+                            }
                         }
                         creating_game_ids.put(player.getName(), id);
                         player.sendMessage(ChatColor.GREEN + "Game created, set blue spawn with /ctt setspawn");

@@ -5,14 +5,18 @@ import java.util.Map.Entry;
 
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
+import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.player.PlayerCommandPreprocessEvent;
+import org.bukkit.event.player.PlayerDropItemEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.ItemStack;
 
 import com.mike101102.ctt.gameapi.Game;
@@ -42,10 +46,24 @@ public class CTTListener implements Listener {
                 if (!(en.getValue() instanceof CTTGame))
                     continue;
                 CTTGame g = (CTTGame) en.getValue();
+                int go = 0;
                 for (ItemStack i : player.getInventory().getContents()) {
                     if (i == null) continue;
                     if (i.getType() == Material.GOLD_BLOCK) {
-                        player.getLocation().getWorld().dropItem(player.getLocation(), i);
+                        go += i.getAmount();
+                    }
+                }
+                if (go > 0) {
+                    boolean j = true;
+                    if (event instanceof EntityDamageByEntityEvent) {
+                        EntityDamageByEntityEvent e = (EntityDamageByEntityEvent) event;
+                        if (e.getDamager() instanceof Player) {
+                            ((Player) e.getDamager()).getInventory().addItem(new ItemStack(Material.GOLD_BLOCK, go));
+                            j = false;
+                        }
+                    }
+                    if (j) {
+                        g.addBlocks(go);
                     }
                 }
                 g.resetPlayerInventory(player);
@@ -58,7 +76,7 @@ public class CTTListener implements Listener {
                     event.setCancelled(true);
                     player.setHealth(player.getMaxHealth());
                     player.setSaturation(10f);
-                    player.setFireTicks(0);
+                    player.setFireTicks(1);
                     player.setFoodLevel(20);
                     if (event instanceof EntityDamageByEntityEvent && ((EntityDamageByEntityEvent) event).getDamager() instanceof Player) {
                         EntityDamageByEntityEvent ev = (EntityDamageByEntityEvent) event;
@@ -103,7 +121,45 @@ public class CTTListener implements Listener {
                 if (en.getValue().getPlayers().contains(event.getPlayer().getName())) {
                     if (event.getBlock().getType() != Material.GOLD_BLOCK) {
                         event.setCancelled(true);
+                    } else {
+                        event.setCancelled(true);
+                        event.getBlock().setType(Material.AIR);
+                        event.getPlayer().getInventory().addItem(new ItemStack(Material.GOLD_BLOCK));
                     }
+                }
+            }
+        }
+    }
+    
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onBlockPlace(BlockPlaceEvent event) {
+        for (Entry<Integer, Game> en : GameAPIMain.getRunners().entrySet()) {
+            if (en.getValue() instanceof CTTGame) {
+                if (en.getValue().getPlayers().contains(event.getPlayer().getName())) {
+                    Block a = event.getBlockAgainst();
+                    if (a.getType() != Material.OBSIDIAN && a.getType() != Material.GOLD_BLOCK) {
+                        event.setCancelled(true);
+                        event.getPlayer().updateInventory();
+                    }
+                }
+            }
+        }
+    }
+    
+    @EventHandler()
+    public void onPlayerQuit(PlayerQuitEvent event) {
+        if (plugin.creating_game_ids.containsKey(event.getPlayer().getName())) {
+            CTT.debug("Cancelling creation for " + event.getPlayer().getName() + " because he/she has left the game");
+            plugin.cancelCreation(event.getPlayer());
+        }
+    }
+    
+    @EventHandler
+    public void onPlayerDrop(PlayerDropItemEvent event) {
+        for (Entry<Integer, Game> en : GameAPIMain.getRunners().entrySet()) {
+            if (en.getValue() instanceof CTTGame) {
+                if (en.getValue().getPlayers().contains(event.getPlayer().getName())) {
+                    event.setCancelled(true);
                 }
             }
         }

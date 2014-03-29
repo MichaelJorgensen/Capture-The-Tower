@@ -4,6 +4,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Random;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -126,6 +127,14 @@ public class CTTGame extends Game {
     @Override
     public void removePlayer(Player player) {
         debug("Attempting to remove player " + player.getName());
+        int go = 0;
+        for (ItemStack i : player.getInventory().getContents()) {
+            if (i == null) continue;
+            if (i.getType() == Material.GOLD_BLOCK) {
+                go += i.getAmount();
+            }
+        }
+        addBlocks(go);
         player.setScoreboard(Bukkit.getScoreboardManager().getNewScoreboard());
         player.getInventory().clear();
         player.getInventory().setContents(pd.get(player.getName()).getPlayerInventory());
@@ -311,6 +320,68 @@ public class CTTGame extends Game {
         debug(player.getName() + "'s inventory has been reset");
     }
     
+    public void addBlocks(int b) {
+        debug("Adding " + b + " blocks to the game");
+        int bS;
+        int rS;
+        int c = 0;
+        for (int i = 0; i < b; i++) {
+            bS = this.getBlueScoreFromBlocks();
+            rS = this.getRedScoreFromBlocks();
+            if (bS == rS) {
+                if (new Random().nextInt(1) == 1) {
+                    addBlockToBlue();
+                } else {
+                    addBlockToRed();
+                }
+                c++;
+                continue;
+            }
+            else if (bS > rS) {
+                addBlockToRed();
+                c++;
+                continue;
+            } else {
+                addBlockToBlue();
+                c++;
+                continue;
+            }
+        }
+        debug("Added " + c + " blocks to the game");
+    }
+    
+    private void addBlockToBlue() {
+        debug("Adding block to blue");
+        if (bLoc1.getBlock().getType() == Material.AIR) {
+            bLoc1.getBlock().setType(Material.GOLD_BLOCK);
+        }
+        else if (bLoc2.getBlock().getType() == Material.AIR) {
+            bLoc2.getBlock().setType(Material.GOLD_BLOCK);
+        }
+        else if (bLoc3.getBlock().getType() == Material.AIR) {
+            bLoc3.getBlock().setType(Material.GOLD_BLOCK);
+        }
+        else if (bLoc4.getBlock().getType() == Material.AIR) {
+            bLoc4.getBlock().setType(Material.GOLD_BLOCK);
+        }
+    }
+    
+    private void addBlockToRed() {
+        debug("Adding block to red");
+        if (rLoc1.getBlock().getType() == Material.AIR) {
+            rLoc1.getBlock().setType(Material.GOLD_BLOCK);
+        }
+        else if (rLoc2.getBlock().getType() == Material.AIR) {
+            rLoc2.getBlock().setType(Material.GOLD_BLOCK);
+        }
+        else if (rLoc3.getBlock().getType() == Material.AIR) {
+            rLoc3.getBlock().setType(Material.GOLD_BLOCK);
+        }
+        else if (rLoc4.getBlock().getType() == Material.AIR) {
+            rLoc4.getBlock().setType(Material.GOLD_BLOCK);
+        }
+    }
+    
     public void resetGame(boolean message) {
         debug("Resetting game " + getGameId());
         reset = true;
@@ -328,7 +399,7 @@ public class CTTGame extends Game {
         for (String i : list) {
             removePlayer(Bukkit.getPlayer(i));
         }
-        debug("Suffling teams..");
+        debug("Shuffling teams..");
         Collections.shuffle(list);
         for (String i : list) {
             addPlayer(Bukkit.getPlayer(i));
