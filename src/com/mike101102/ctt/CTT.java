@@ -510,6 +510,19 @@ public class CTT extends JavaPlugin {
                             return true;
                         }
                     } else {
+                        try {
+                            ResultSet rs = sql.query("SELECT * FROM ctt WHERE gameid=" + id);
+                            if (rs.first()) {
+                                sql.query("DELETE FROM ctt WHERE gameid=" + id);
+                                sender.sendMessage(ChatColor.GREEN + "Game has been removed");
+                                debug(id + " has been removed");
+                                return true;
+                            }
+                        } catch (SQLException e) {
+                            e.printStackTrace();
+                            sender.sendMessage(ChatColor.RED + "SQL error while removing the game, " + e.getMessage());
+                            return true;
+                        }
                         sender.sendMessage(ChatColor.RED + "That game with that id does not exist");
                         return true;
                     }

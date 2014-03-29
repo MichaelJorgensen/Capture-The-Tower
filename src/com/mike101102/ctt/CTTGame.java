@@ -322,6 +322,10 @@ public class CTTGame extends Game {
     
     public void addBlocks(int b) {
         debug("Adding " + b + " blocks to the game");
+        if (reset) {
+            debug("Blocks not added, middle of reset");
+            return;
+        }
         int bS;
         int rS;
         int c = 0;
