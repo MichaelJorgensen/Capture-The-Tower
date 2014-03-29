@@ -131,7 +131,7 @@ public class GameListener implements Listener {
                     return;
                 }
             } else {
-                player.sendMessage(ChatColor.RED + "You do not have permission (GameAPI.create)");
+                player.sendMessage(ChatColor.RED + "You do not have permission (ctt.create)");
                 event.getBlock().breakNaturally();
                 return;
             }
