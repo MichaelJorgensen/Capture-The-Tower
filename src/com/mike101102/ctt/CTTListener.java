@@ -12,6 +12,7 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.event.entity.EntityCombustEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.player.PlayerCommandPreprocessEvent;
@@ -27,6 +28,7 @@ public class CTTListener implements Listener {
     private CTT plugin;
     private ArrayList<String> okayNoArgCommands = new ArrayList<String>();
     private ArrayList<String> okayArgCommands = new ArrayList<String>();
+    private ArrayList<String> noFire = new ArrayList<String>();
 
     public CTTListener(CTT plugin) {
         this.plugin = plugin;
@@ -46,6 +48,9 @@ public class CTTListener implements Listener {
                 if (!(en.getValue() instanceof CTTGame))
                     continue;
                 CTTGame g = (CTTGame) en.getValue();
+                if (!g.getPlayers().contains(player.getName())) {
+                    return;
+                }
                 int go = 0;
                 for (ItemStack i : player.getInventory().getContents()) {
                     if (i == null) continue;
@@ -76,8 +81,9 @@ public class CTTListener implements Listener {
                     event.setCancelled(true);
                     player.setHealth(player.getMaxHealth());
                     player.setSaturation(10f);
-                    player.setFireTicks(1);
+                    player.setFireTicks(0);
                     player.setFoodLevel(20);
+                    noFire.add(player.getName());
                     if (event instanceof EntityDamageByEntityEvent && ((EntityDamageByEntityEvent) event).getDamager() instanceof Player) {
                         EntityDamageByEntityEvent ev = (EntityDamageByEntityEvent) event;
                         Player p = (Player) ev.getDamager();
@@ -161,6 +167,17 @@ public class CTTListener implements Listener {
                 if (en.getValue().getPlayers().contains(event.getPlayer().getName())) {
                     event.setCancelled(true);
                 }
+            }
+        }
+    }
+    
+    @EventHandler
+    public void onEntityCombust(EntityCombustEvent event) {
+        if (event.getEntity() instanceof Player) {
+            Player player = (Player) event.getEntity();
+            if (noFire.contains(player.getName())) {
+                event.setCancelled(true);
+                noFire.remove(player.getName());
             }
         }
     }
