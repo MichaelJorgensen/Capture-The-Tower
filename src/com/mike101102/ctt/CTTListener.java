@@ -53,24 +53,27 @@ public class CTTListener implements Listener {
                 }
                 int go = 0;
                 for (ItemStack i : player.getInventory().getContents()) {
-                    if (i == null) continue;
+                    if (i == null)
+                        continue;
                     if (i.getType() == Material.GOLD_BLOCK) {
                         go += i.getAmount();
                     }
                 }
-                if (go > 0) {
-                    boolean j = true;
-                    if (event instanceof EntityDamageByEntityEvent) {
-                        EntityDamageByEntityEvent e = (EntityDamageByEntityEvent) event;
-                        if (e.getDamager() instanceof Player) {
+                boolean j = true;
+                if (event instanceof EntityDamageByEntityEvent) {
+                    EntityDamageByEntityEvent e = (EntityDamageByEntityEvent) event;
+                    if (e.getDamager() instanceof Player) {
+                        if (go > 0) {
                             ((Player) e.getDamager()).getInventory().addItem(new ItemStack(Material.GOLD_BLOCK, go));
                             j = false;
                         }
-                    }
-                    if (j) {
-                        g.addBlocks(go);
+                        plugin.getPlayerStatsToBeUpdated().add(new PlayerStats(((Player) e.getDamager()).getName(), 0, 0, 1, 0));
                     }
                 }
+                if (j && go > 0) {
+                    g.addBlocks(go);
+                }
+                plugin.getPlayerStatsToBeUpdated().add(new PlayerStats(player.getName(), 0, 0, 0, 1));
                 g.resetPlayerInventory(player);
                 if (g.getPlayers().contains(player.getName())) {
                     if (g.getBlueTeam().getPlayers().contains(player.getName())) {
@@ -136,7 +139,7 @@ public class CTTListener implements Listener {
             }
         }
     }
-    
+
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onBlockPlace(BlockPlaceEvent event) {
         for (Entry<Integer, Game> en : GameAPIMain.getRunners().entrySet()) {
@@ -151,7 +154,7 @@ public class CTTListener implements Listener {
             }
         }
     }
-    
+
     @EventHandler()
     public void onPlayerQuit(PlayerQuitEvent event) {
         if (plugin.creating_game_ids.containsKey(event.getPlayer().getName())) {
@@ -159,7 +162,7 @@ public class CTTListener implements Listener {
             plugin.cancelCreation(event.getPlayer());
         }
     }
-    
+
     @EventHandler
     public void onPlayerDrop(PlayerDropItemEvent event) {
         for (Entry<Integer, Game> en : GameAPIMain.getRunners().entrySet()) {
@@ -170,7 +173,7 @@ public class CTTListener implements Listener {
             }
         }
     }
-    
+
     @EventHandler
     public void onEntityCombust(EntityCombustEvent event) {
         if (event.getEntity() instanceof Player) {

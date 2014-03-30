@@ -9,6 +9,7 @@ debug: false
 time-limit: 180
 max-players: 10
 kill-message: '%killer% has crucified %victim%'
+enable-stats: true
 sql: SQLite
 MySQL:
     hostname: 'localhost'

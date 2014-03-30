@@ -30,15 +30,20 @@ public class CTT extends JavaPlugin {
     private SQL sql;
     private DatabaseOptions dop;
     private static boolean debug;
+    private boolean stats;
+    private StatsUpdater su;
 
     public HashMap<String, Integer> creating_game_ids = new HashMap<String, Integer>();
     public HashMap<String, Location> creating_spawns_ids = new HashMap<String, Location>();
     public HashMap<String, Location> creating_spawns2_ids = new HashMap<String, Location>();
     public HashMap<String, Location> creating_goals_ids = new HashMap<String, Location>();
 
+    private final ArrayList<PlayerStats> playerStats = new ArrayList<PlayerStats>();
+
     public void onEnable() {
         saveDefaultConfig();
         debug = shouldDebug();
+        stats = getConfig().getBoolean("enable-stats");
         String s = getConfig().getString("sql");
         if (s != null) {
             if (s.equalsIgnoreCase("mysql")) {
@@ -60,6 +65,7 @@ public class CTT extends JavaPlugin {
             debug("Opening SQL connection");
             sql.open();
             sql.createTable("CREATE TABLE IF NOT EXISTS ctt (gameid INT(23), x1 INT(23), y1 INT(23), z1 INT(23), yaw1 VARCHAR(255), pitch1 VARCHAR(255), gx1 FLOAT(23), gy1 FLOAT(23), gz1 FLOAT(23), x2 INT(23), y2 INT(23), z2 INT(23), yaw2 VARCHAR(255), pitch2 VARCHAR(255), gx2 FLOAT(23), gy2 FLOAT(23), gz2 FLOAT(23), spawnworld VARCHAR(255), sx INT(23), sy INT(23), sz INT(23), signworld VARCHAR(255))");
+            sql.createTable("CREATE TABLE IF NOT EXISTS ctt_stats (player VARCHAR(255), wins INT(23), losses INT(23), kills INT(23), deaths INT(23))");
         } catch (SQLException e) {
             e.printStackTrace();
             send("Failed to make connection with the database, disabling plugin");
@@ -79,6 +85,7 @@ public class CTT extends JavaPlugin {
                         rs.first();
                     if (getServer().getWorld(rs.getString("spawnworld")) == null) {
                         send("Game ID " + gameid + "'s world does not exist. Will skip loading this game! To remove this message, delete this gameid or bring the world back.");
+                        debug("World given: " + rs.getString("spawnworld"));
                         continue;
                     }
                     ArrayList<Location> spawns = new ArrayList<Location>();
@@ -114,9 +121,13 @@ public class CTT extends JavaPlugin {
                 }
             }, 250L, 5000L);
         }
+        su = new StatsUpdater(this);
+        getServer().getScheduler().scheduleAsyncRepeatingTask(this, su, 2400L, 2400L);
     }
 
     public void onDisable() {
+        debug("Updating any remaining stats...");
+        su.run();
         debug("Closing database connection...");
         try {
             sql.close();
@@ -147,6 +158,10 @@ public class CTT extends JavaPlugin {
             send("[Debug] " + message);
     }
 
+    public boolean stats() {
+        return stats;
+    }
+
     public SQL getSQL() {
         return sql;
     }
@@ -167,6 +182,10 @@ public class CTT extends JavaPlugin {
         return debug;
     }
 
+    public ArrayList<PlayerStats> getPlayerStatsToBeUpdated() {
+        return playerStats;
+    }
+
     public String getKillMessage() {
         return convert(getConfig().getString("kill-message"));
     }
@@ -174,7 +193,7 @@ public class CTT extends JavaPlugin {
     public String convert(String string) {
         return ChatColor.translateAlternateColorCodes("^".charAt(0), string);
     }
-    
+
     public void cancelCreation(Player player) {
         if (creating_game_ids.containsKey(player.getName()) || creating_spawns_ids.containsKey(player.getName()) || creating_spawns2_ids.containsKey(player.getName()) || creating_goals_ids.containsKey(player.getName())) {
             creating_game_ids.remove(player.getName());
@@ -369,7 +388,7 @@ public class CTT extends JavaPlugin {
                         } else {
                             try {
                                 ResultSet rs = sql.query("SELECT * FROM ctt WHERE gameid=" + id);
-                                if (rs.first()) {
+                                if (rs.next()) {
                                     player.sendMessage(ChatColor.GOLD.toString() + id + ChatColor.RED + " is already a game id");
                                     return true;
                                 }
@@ -512,7 +531,7 @@ public class CTT extends JavaPlugin {
                     } else {
                         try {
                             ResultSet rs = sql.query("SELECT * FROM ctt WHERE gameid=" + id);
-                            if (rs.first()) {
+                            if (rs.next()) {
                                 sql.query("DELETE FROM ctt WHERE gameid=" + id);
                                 sender.sendMessage(ChatColor.GREEN + "Game has been removed");
                                 debug(id + " has been removed");

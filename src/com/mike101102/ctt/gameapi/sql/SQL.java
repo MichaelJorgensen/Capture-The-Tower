@@ -128,7 +128,7 @@ public class SQL {
      *         keywords above), otherwise will be equal to executeQuery(query)
      * @throws SQLException
      */
-    public ResultSet query(String query) throws SQLException {
+    public synchronized ResultSet query(String query) throws SQLException {
         Statement st = null;
         ResultSet rs = null;
         st = con.createStatement();

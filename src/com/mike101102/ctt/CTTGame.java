@@ -27,6 +27,7 @@ import com.mike101102.ctt.gameapi.sql.SQL;
 
 public class CTTGame extends Game {
 
+    private CTT plugin;
     private SQL sql;
 
     private int time = 0;
@@ -60,7 +61,7 @@ public class CTTGame extends Game {
     private Location bLoc2;
     private Location bLoc3;
     private Location bLoc4;
-    
+
     private Location rLoc1;
     private Location rLoc2;
     private Location rLoc3;
@@ -68,6 +69,7 @@ public class CTTGame extends Game {
 
     public CTTGame(CTT plugin, int gameid, int maxPlayers, int timeLimit, Location signLoc, ArrayList<Location> teamspawns, Location blueGoal, Location redGoal) {
         super(plugin, gameid, maxPlayers, signLoc, ChatColor.GREEN + "[CTT]", GameStage.Waiting, teamspawns, 20L, 20L);
+        this.plugin = plugin;
         sql = plugin.getSQL();
         board = Bukkit.getScoreboardManager().getNewScoreboard();
         Objective obj = board.registerNewObjective("score", "tower");
@@ -87,7 +89,7 @@ public class CTTGame extends Game {
         resetGoalBlocks();
         debug("Game is ready");
     }
-    
+
     private void debug(String message) {
         CTT.debug("[GAME:" + getGameId() + "] " + message);
     }
@@ -129,7 +131,8 @@ public class CTTGame extends Game {
         debug("Attempting to remove player " + player.getName());
         int go = 0;
         for (ItemStack i : player.getInventory().getContents()) {
-            if (i == null) continue;
+            if (i == null)
+                continue;
             if (i.getType() == Material.GOLD_BLOCK) {
                 go += i.getAmount();
             }
@@ -154,7 +157,7 @@ public class CTTGame extends Game {
         }
         debug(player.getName() + " has been removed successfully from the game");
     }
-    
+
     public int getBlueScoreFromBlocks() {
         int b = 0;
         if (bLoc1.getBlock().getType() == Material.GOLD_BLOCK)
@@ -167,7 +170,7 @@ public class CTTGame extends Game {
             b++;
         return b;
     }
-    
+
     public int getRedScoreFromBlocks() {
         int r = 0;
         if (rLoc1.getBlock().getType() == Material.GOLD_BLOCK)
@@ -180,13 +183,13 @@ public class CTTGame extends Game {
             r++;
         return r;
     }
-    
+
     public void resetGoalBlocks() {
         bLoc1.getWorld().getBlockAt(bLoc1).setType(Material.GOLD_BLOCK);
         bLoc2.getWorld().getBlockAt(bLoc2).setType(Material.GOLD_BLOCK);
         bLoc3.getWorld().getBlockAt(bLoc3).setType(Material.AIR);
         bLoc4.getWorld().getBlockAt(bLoc4).setType(Material.AIR);
-        
+
         rLoc1.getWorld().getBlockAt(rLoc1).setType(Material.GOLD_BLOCK);
         rLoc2.getWorld().getBlockAt(rLoc2).setType(Material.GOLD_BLOCK);
         rLoc3.getWorld().getBlockAt(rLoc3).setType(Material.AIR);
@@ -209,10 +212,12 @@ public class CTTGame extends Game {
             int rScore = r.getBlocks();
             if (bScore > rScore) {
                 this.sendGameMessage(ChatColor.BLUE + "Blue Team Wins!");
+                blueTeamWin();
                 resetGame(false);
                 return;
             } else if (bScore < rScore) {
                 this.sendGameMessage(ChatColor.RED + "Red Team Wins!");
+                redTeamWin();
                 resetGame(false);
                 return;
             } else {
@@ -224,10 +229,12 @@ public class CTTGame extends Game {
 
         if (b.getBlocks() >= 4) {
             sendGameMessage(ChatColor.BLUE + "Blue team wins!");
+            blueTeamWin();
             resetGame(false);
             return;
         } else if (r.getBlocks() >= 4) {
             sendGameMessage(ChatColor.RED + "Red team wins!");
+            redTeamWin();
             resetGame(false);
             return;
         }
@@ -281,21 +288,41 @@ public class CTTGame extends Game {
         debug("Sign location updated");
     }
 
+    private void blueTeamWin() {
+        for (String n : this.getPlayers()) {
+            if (this.getBlueTeam().getPlayers().contains(n)) {
+                plugin.getPlayerStatsToBeUpdated().add(new PlayerStats(n, 1, 0, 0, 0));
+            } else {
+                plugin.getPlayerStatsToBeUpdated().add(new PlayerStats(n, 0, 1, 0, 0));
+            }
+        }
+    }
+
+    private void redTeamWin() {
+        for (String n : this.getPlayers()) {
+            if (this.getBlueTeam().getPlayers().contains(n)) {
+                plugin.getPlayerStatsToBeUpdated().add(new PlayerStats(n, 0, 1, 0, 0));
+            } else {
+                plugin.getPlayerStatsToBeUpdated().add(new PlayerStats(n, 1, 0, 0, 0));
+            }
+        }
+    }
+
     public void resetScores() {
         b.setBlocks(2);
         r.setBlocks(2);
         resetGoalBlocks();
         debug("Scores reset");
     }
-    
+
     public CTTTeam getBlueTeam() {
         return b;
     }
-    
+
     public CTTTeam getRedTeam() {
         return r;
     }
-    
+
     public void resetPlayerInventory(Player player) {
         player.getInventory().clear();
         if (b.getPlayers().contains(player.getName())) {
@@ -303,11 +330,11 @@ public class CTTGame extends Game {
         } else {
             player.getInventory().setHelmet(redHelmet);
         }
-        
+
         if (player.getGameMode() != GameMode.SURVIVAL) {
             player.setGameMode(GameMode.SURVIVAL);
         }
-        
+
         player.getInventory().setChestplate(chestplate);
         player.getInventory().setLeggings(leggings);
         player.getInventory().setBoots(boots);
@@ -319,7 +346,7 @@ public class CTTGame extends Game {
         player.updateInventory();
         debug(player.getName() + "'s inventory has been reset");
     }
-    
+
     public void addBlocks(int b) {
         debug("Adding " + b + " blocks to the game");
         if (reset) {
@@ -340,8 +367,7 @@ public class CTTGame extends Game {
                 }
                 c++;
                 continue;
-            }
-            else if (bS > rS) {
+            } else if (bS > rS) {
                 addBlockToRed();
                 c++;
                 continue;
@@ -353,39 +379,33 @@ public class CTTGame extends Game {
         }
         debug("Added " + c + " blocks to the game");
     }
-    
+
     private void addBlockToBlue() {
         debug("Adding block to blue");
         if (bLoc1.getBlock().getType() == Material.AIR) {
             bLoc1.getBlock().setType(Material.GOLD_BLOCK);
-        }
-        else if (bLoc2.getBlock().getType() == Material.AIR) {
+        } else if (bLoc2.getBlock().getType() == Material.AIR) {
             bLoc2.getBlock().setType(Material.GOLD_BLOCK);
-        }
-        else if (bLoc3.getBlock().getType() == Material.AIR) {
+        } else if (bLoc3.getBlock().getType() == Material.AIR) {
             bLoc3.getBlock().setType(Material.GOLD_BLOCK);
-        }
-        else if (bLoc4.getBlock().getType() == Material.AIR) {
+        } else if (bLoc4.getBlock().getType() == Material.AIR) {
             bLoc4.getBlock().setType(Material.GOLD_BLOCK);
         }
     }
-    
+
     private void addBlockToRed() {
         debug("Adding block to red");
         if (rLoc1.getBlock().getType() == Material.AIR) {
             rLoc1.getBlock().setType(Material.GOLD_BLOCK);
-        }
-        else if (rLoc2.getBlock().getType() == Material.AIR) {
+        } else if (rLoc2.getBlock().getType() == Material.AIR) {
             rLoc2.getBlock().setType(Material.GOLD_BLOCK);
-        }
-        else if (rLoc3.getBlock().getType() == Material.AIR) {
+        } else if (rLoc3.getBlock().getType() == Material.AIR) {
             rLoc3.getBlock().setType(Material.GOLD_BLOCK);
-        }
-        else if (rLoc4.getBlock().getType() == Material.AIR) {
+        } else if (rLoc4.getBlock().getType() == Material.AIR) {
             rLoc4.getBlock().setType(Material.GOLD_BLOCK);
         }
     }
-    
+
     public void resetGame(boolean message) {
         debug("Resetting game " + getGameId());
         reset = true;
