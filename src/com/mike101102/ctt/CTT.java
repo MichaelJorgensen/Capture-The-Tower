@@ -5,6 +5,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map.Entry;
 
 import org.bukkit.ChatColor;
@@ -38,7 +39,9 @@ public class CTT extends JavaPlugin {
     public HashMap<String, Location> creating_spawns2_ids = new HashMap<String, Location>();
     public HashMap<String, Location> creating_goals_ids = new HashMap<String, Location>();
 
-    private final ArrayList<PlayerStats> playerStats = new ArrayList<PlayerStats>();
+    private final HashMap<String, PlayerStats> playerStats = new HashMap<String, PlayerStats>();
+    private final LinkedHashMap<String, Integer> topWins = new LinkedHashMap<String, Integer>();
+    private final LinkedHashMap<String, Integer> topKills = new LinkedHashMap<String, Integer>();
 
     public void onEnable() {
         saveDefaultConfig();
@@ -121,13 +124,25 @@ public class CTT extends JavaPlugin {
                 }
             }, 250L, 5000L);
         }
-        su = new StatsUpdater(this);
-        getServer().getScheduler().scheduleAsyncRepeatingTask(this, su, 2400L, 2400L);
+        if (stats) {
+            try {
+                su = new StatsUpdater(this);
+            } catch (SQLException e) {
+                e.printStackTrace();
+                send("Failed to load stats, disabling");
+                stats = false;
+                getServer().getPluginManager().disablePlugin(this);
+                return;
+            }
+            getServer().getScheduler().scheduleAsyncRepeatingTask(this, su, 6000L, 6000L);
+        }
     }
 
     public void onDisable() {
-        debug("Updating any remaining stats...");
-        su.run();
+        if (stats) {
+            send("!!! Updating stats, this may take a moment... !!!");
+            su.run();
+        }
         debug("Closing database connection...");
         try {
             sql.close();
@@ -158,6 +173,14 @@ public class CTT extends JavaPlugin {
             send("[Debug] " + message);
     }
 
+    public LinkedHashMap<String, Integer> getTopWins() {
+        return topWins;
+    }
+
+    public LinkedHashMap<String, Integer> getTopKills() {
+        return topKills;
+    }
+
     public boolean stats() {
         return stats;
     }
@@ -182,7 +205,7 @@ public class CTT extends JavaPlugin {
         return debug;
     }
 
-    public ArrayList<PlayerStats> getPlayerStatsToBeUpdated() {
+    public HashMap<String, PlayerStats> getPlayerStats() {
         return playerStats;
     }
 
@@ -221,6 +244,8 @@ public class CTT extends JavaPlugin {
             s.sendMessage(ChatColor.GOLD + "/ctt delete [id]");
         if (s.hasPermission("ctt.reset"))
             s.sendMessage(ChatColor.GOLD + "/ctt reset [id]");
+        if (s.hasPermission("ctt.top"))
+            s.sendMessage(ChatColor.GOLD + "/ctt top");
         if (s.hasPermission("ctt.join")) {
             s.sendMessage(ChatColor.GOLD + "/join [id]");
             s.sendMessage(ChatColor.GOLD + "/leave");
@@ -586,6 +611,42 @@ public class CTT extends JavaPlugin {
                 }
             } else {
                 sender.sendMessage(ChatColor.RED + "You do not have permission (ctt.rest)");
+                return true;
+            }
+        }
+
+        else if (args[0].equalsIgnoreCase("top")) {
+            if (sender.hasPermission("ctt.top")) {
+                StringBuilder sb = new StringBuilder();
+                sb.append(ChatColor.GOLD + "Top Wins: " + ChatColor.GREEN);
+                int cap = 0;
+                for (Entry<String, Integer> en : topWins.entrySet()) {
+                    if (cap < 10) {
+                        sb.append(ChatColor.BLUE.toString() + (cap + 1) + ". " + ChatColor.GREEN + en.getKey() + " (" + en.getValue() + "), ");
+                    } else {
+                        break;
+                    }
+                    cap++;
+                }
+                sb.deleteCharAt(sb.length() - 1);
+                sb.deleteCharAt(sb.length() - 1);
+                sb.append("\n");
+                sb.append(ChatColor.GOLD + "Top Kills: " + ChatColor.GREEN);
+                cap = 0;
+                for (Entry<String, Integer> en : topKills.entrySet()) {
+                    if (cap < 10) {
+                        sb.append(ChatColor.BLUE.toString() + (cap + 1) + ". " + ChatColor.GREEN + en.getKey() + " (" + en.getValue() + "), ");
+                    } else {
+                        break;
+                    }
+                    cap++;
+                }
+                sb.deleteCharAt(sb.length() - 1);
+                sb.deleteCharAt(sb.length() - 1);
+                sender.sendMessage(sb.toString());
+                return true;
+            } else {
+                sender.sendMessage(ChatColor.RED + "You do not have permission (ctt.top)");
                 return true;
             }
         }

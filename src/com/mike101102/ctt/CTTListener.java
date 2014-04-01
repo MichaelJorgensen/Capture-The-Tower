@@ -63,17 +63,30 @@ public class CTTListener implements Listener {
                 if (event instanceof EntityDamageByEntityEvent) {
                     EntityDamageByEntityEvent e = (EntityDamageByEntityEvent) event;
                     if (e.getDamager() instanceof Player) {
+                        Player p = (Player) e.getDamager();
                         if (go > 0) {
-                            ((Player) e.getDamager()).getInventory().addItem(new ItemStack(Material.GOLD_BLOCK, go));
+                            p.getInventory().addItem(new ItemStack(Material.GOLD_BLOCK, go));
                             j = false;
                         }
-                        plugin.getPlayerStatsToBeUpdated().add(new PlayerStats(((Player) e.getDamager()).getName(), 0, 0, 1, 0));
+                        PlayerStats s = plugin.getPlayerStats().get(p.getName());
+                        if (s != null) {
+                            s.setKills(s.getKills() + 1);
+                        } else {
+                            s = new PlayerStats(p.getName(), 0, 0, 1, 0);
+                        }
+                        plugin.getPlayerStats().put(p.getName(), s);
                     }
                 }
                 if (j && go > 0) {
                     g.addBlocks(go);
                 }
-                plugin.getPlayerStatsToBeUpdated().add(new PlayerStats(player.getName(), 0, 0, 0, 1));
+                PlayerStats s = plugin.getPlayerStats().get(player.getName());
+                if (s != null) {
+                    s.setDeaths(s.getDeaths() + 1);
+                } else {
+                    s = new PlayerStats(player.getName(), 0, 0, 0, 1);
+                }
+                plugin.getPlayerStats().put(player.getName(), s);
                 g.resetPlayerInventory(player);
                 if (g.getPlayers().contains(player.getName())) {
                     if (g.getBlueTeam().getPlayers().contains(player.getName())) {

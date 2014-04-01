@@ -24,6 +24,25 @@ public class PlayerStats {
         this.kills = kills;
         this.deaths = deaths;
     }
+    
+    /**
+     * Own equals method
+     */
+    @Override
+    public boolean equals(Object o) {
+        if (o == null) {
+            return false;
+        }
+        else if (!(o instanceof PlayerStats)) {
+            return false;
+        }
+        PlayerStats s = (PlayerStats) o;
+        if (s.getName().equalsIgnoreCase(name) && s.getWins() == wins && s.getLosses() == losses && s.getKills() == kills && s.getDeaths() == deaths) {
+            return true;
+        } else {
+            return false;
+        }
+    }
 
     public String getName() {
         return name;
@@ -32,16 +51,32 @@ public class PlayerStats {
     public int getWins() {
         return wins;
     }
+    
+    public void setWins(int wins) {
+        this.wins = wins;
+    }
 
     public int getLosses() {
         return losses;
+    }
+    
+    public void setLosses(int losses) {
+        this.losses = losses;
     }
 
     public int getKills() {
         return kills;
     }
+    
+    public void setKills(int kills) {
+        this.kills = kills;
+    }
 
     public int getDeaths() {
         return deaths;
+    }
+    
+    public void setDeaths(int deaths) {
+        this.deaths = deaths;
     }
 }

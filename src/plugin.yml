@@ -34,6 +34,7 @@ permissions:
             ctt.join: true
             ctt.list: true
             ctt.info: true
+            ctt.top: true
     ctt.create:
         description: Allows you to create new games
         default: op
@@ -52,3 +53,6 @@ permissions:
     ctt.info:
         description: Allows you to view info on games
         default: op
+    ctt.top:
+        description: Allows you to view the top scores
+        default: true

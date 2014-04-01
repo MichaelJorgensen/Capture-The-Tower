@@ -137,7 +137,9 @@ public class CTTGame extends Game {
                 go += i.getAmount();
             }
         }
-        addBlocks(go);
+        if (go > 0) {
+            addBlocks(go);
+        }
         player.setScoreboard(Bukkit.getScoreboardManager().getNewScoreboard());
         player.getInventory().clear();
         player.getInventory().setContents(pd.get(player.getName()).getPlayerInventory());
@@ -194,7 +196,6 @@ public class CTTGame extends Game {
         rLoc2.getWorld().getBlockAt(rLoc2).setType(Material.GOLD_BLOCK);
         rLoc3.getWorld().getBlockAt(rLoc3).setType(Material.AIR);
         rLoc4.getWorld().getBlockAt(rLoc4).setType(Material.AIR);
-        debug("Goal blocks reset");
     }
 
     @Override
@@ -256,6 +257,13 @@ public class CTTGame extends Game {
                 p.setScoreboard(board);
             }
         }
+
+        int left = timeLimit - time;
+        if (left == 10) {
+            this.sendGameMessage(ChatColor.RED + "10 seconds left");
+        } else if (left <= 3 && left > 0) {
+            this.sendGameMessage(ChatColor.RED.toString() + left);
+        }
     }
 
     @Override
@@ -291,9 +299,21 @@ public class CTTGame extends Game {
     private void blueTeamWin() {
         for (String n : this.getPlayers()) {
             if (this.getBlueTeam().getPlayers().contains(n)) {
-                plugin.getPlayerStatsToBeUpdated().add(new PlayerStats(n, 1, 0, 0, 0));
+                PlayerStats s = plugin.getPlayerStats().get(n);
+                if (s != null) {
+                    s.setWins(s.getWins() + 1);
+                } else {
+                    s = new PlayerStats(n, 1, 0, 0, 0);
+                }
+                plugin.getPlayerStats().put(n, s);
             } else {
-                plugin.getPlayerStatsToBeUpdated().add(new PlayerStats(n, 0, 1, 0, 0));
+                PlayerStats s = plugin.getPlayerStats().get(n);
+                if (s != null) {
+                    s.setLosses(s.getLosses() + 1);
+                } else {
+                    s = new PlayerStats(n, 0, 1, 0, 0);
+                }
+                plugin.getPlayerStats().put(n, s);
             }
         }
     }
@@ -301,9 +321,21 @@ public class CTTGame extends Game {
     private void redTeamWin() {
         for (String n : this.getPlayers()) {
             if (this.getBlueTeam().getPlayers().contains(n)) {
-                plugin.getPlayerStatsToBeUpdated().add(new PlayerStats(n, 0, 1, 0, 0));
+                PlayerStats s = plugin.getPlayerStats().get(n);
+                if (s != null) {
+                    s.setLosses(s.getLosses() + 1);
+                } else {
+                    s = new PlayerStats(n, 0, 1, 0, 0);
+                }
+                plugin.getPlayerStats().put(n, s);
             } else {
-                plugin.getPlayerStatsToBeUpdated().add(new PlayerStats(n, 1, 0, 0, 0));
+                PlayerStats s = plugin.getPlayerStats().get(n);
+                if (s != null) {
+                    s.setWins(s.getWins() + 1);
+                } else {
+                    s = new PlayerStats(n, 1, 0, 0, 0);
+                }
+                plugin.getPlayerStats().put(n, s);
             }
         }
     }
@@ -344,7 +376,6 @@ public class CTTGame extends Game {
         player.getInventory().addItem(axe);
         player.getInventory().setHeldItemSlot(0);
         player.updateInventory();
-        debug(player.getName() + "'s inventory has been reset");
     }
 
     public void addBlocks(int b) {
