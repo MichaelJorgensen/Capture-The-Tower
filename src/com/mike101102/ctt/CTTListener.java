@@ -49,7 +49,7 @@ public class CTTListener implements Listener {
                     continue;
                 CTTGame g = (CTTGame) en.getValue();
                 if (!g.getPlayers().contains(player.getName())) {
-                    return;
+                    continue;
                 }
                 int go = 0;
                 for (ItemStack i : player.getInventory().getContents()) {
@@ -159,7 +159,7 @@ public class CTTListener implements Listener {
             if (en.getValue() instanceof CTTGame) {
                 if (en.getValue().getPlayers().contains(event.getPlayer().getName())) {
                     Block a = event.getBlockAgainst();
-                    if (a.getType() != Material.OBSIDIAN && a.getType() != Material.GOLD_BLOCK) {
+                    if (!plugin.getOkayIds().contains(a.getTypeId()) && a.getType() != Material.GOLD_BLOCK) {
                         event.setCancelled(true);
                         event.getPlayer().updateInventory();
                     }

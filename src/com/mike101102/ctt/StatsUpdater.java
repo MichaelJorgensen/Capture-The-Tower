@@ -32,8 +32,10 @@ public class StatsUpdater extends BukkitRunnable {
             CTT.debug("Updating Top Kills");
             ResultSet rs = sql.query("SELECT player,kills FROM ctt_stats ORDER BY kills DESC");
             plugin.getTopKills().clear();
+            int r = 1;
             while (rs.next()) {
-                plugin.getTopKills().put(rs.getString("player"), rs.getInt("kills"));
+                plugin.getTopKills().put(rs.getString("player"), new Top(rs.getInt("kills"), r));
+                r++;
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -42,8 +44,10 @@ public class StatsUpdater extends BukkitRunnable {
             CTT.debug("Updating Top Wins");
             ResultSet rs = sql.query("SELECT player,wins FROM ctt_stats ORDER BY wins DESC");
             plugin.getTopWins().clear();
+            int r = 1;
             while (rs.next()) {
-                plugin.getTopWins().put(rs.getString("player"), rs.getInt("wins"));
+                plugin.getTopWins().put(rs.getString("player"), new Top(rs.getInt("wins"), r));
+                r++;
             }
         } catch (SQLException e) {
             e.printStackTrace();

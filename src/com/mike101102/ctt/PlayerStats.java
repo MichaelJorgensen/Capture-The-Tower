@@ -24,7 +24,7 @@ public class PlayerStats {
         this.kills = kills;
         this.deaths = deaths;
     }
-    
+
     /**
      * Own equals method
      */
@@ -32,8 +32,7 @@ public class PlayerStats {
     public boolean equals(Object o) {
         if (o == null) {
             return false;
-        }
-        else if (!(o instanceof PlayerStats)) {
+        } else if (!(o instanceof PlayerStats)) {
             return false;
         }
         PlayerStats s = (PlayerStats) o;
@@ -51,7 +50,7 @@ public class PlayerStats {
     public int getWins() {
         return wins;
     }
-    
+
     public void setWins(int wins) {
         this.wins = wins;
     }
@@ -59,7 +58,7 @@ public class PlayerStats {
     public int getLosses() {
         return losses;
     }
-    
+
     public void setLosses(int losses) {
         this.losses = losses;
     }
@@ -67,7 +66,7 @@ public class PlayerStats {
     public int getKills() {
         return kills;
     }
-    
+
     public void setKills(int kills) {
         this.kills = kills;
     }
@@ -75,7 +74,7 @@ public class PlayerStats {
     public int getDeaths() {
         return deaths;
     }
-    
+
     public void setDeaths(int deaths) {
         this.deaths = deaths;
     }

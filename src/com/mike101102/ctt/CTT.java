@@ -1,6 +1,7 @@
 package com.mike101102.ctt;
 
 import java.io.File;
+import java.io.IOException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -15,6 +16,7 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.mcstats.Metrics;
 
 import com.mike101102.ctt.gameapi.Game;
 import com.mike101102.ctt.gameapi.GameAPIMain;
@@ -33,6 +35,7 @@ public class CTT extends JavaPlugin {
     private static boolean debug;
     private boolean stats;
     private StatsUpdater su;
+    private ArrayList<Integer> okayIds;
 
     public HashMap<String, Integer> creating_game_ids = new HashMap<String, Integer>();
     public HashMap<String, Location> creating_spawns_ids = new HashMap<String, Location>();
@@ -40,14 +43,15 @@ public class CTT extends JavaPlugin {
     public HashMap<String, Location> creating_goals_ids = new HashMap<String, Location>();
 
     private final HashMap<String, PlayerStats> playerStats = new HashMap<String, PlayerStats>();
-    private final LinkedHashMap<String, Integer> topWins = new LinkedHashMap<String, Integer>();
-    private final LinkedHashMap<String, Integer> topKills = new LinkedHashMap<String, Integer>();
+    private final LinkedHashMap<String, Top> topWins = new LinkedHashMap<String, Top>();
+    private final LinkedHashMap<String, Top> topKills = new LinkedHashMap<String, Top>();
 
     public void onEnable() {
         saveDefaultConfig();
         debug = shouldDebug();
         stats = getConfig().getBoolean("enable-stats");
         String s = getConfig().getString("sql");
+        okayIds = getOkayIdsFromConfig();
         if (s != null) {
             if (s.equalsIgnoreCase("mysql")) {
                 debug("Selecting MySQL");
@@ -136,6 +140,12 @@ public class CTT extends JavaPlugin {
             }
             getServer().getScheduler().scheduleAsyncRepeatingTask(this, su, 6000L, 6000L);
         }
+        try {
+            Metrics m = new Metrics(this);
+            m.start();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     public void onDisable() {
@@ -153,6 +163,21 @@ public class CTT extends JavaPlugin {
         }
         GameAPIMain.onDisable();
         getServer().getScheduler().cancelTasks(this);
+    }
+    
+    private ArrayList<Integer> getOkayIdsFromConfig() {
+        ArrayList<Integer> q = new ArrayList<Integer>();
+        for (String i : getConfig().getString("gold-block-ids").replaceAll(" ", "").split(",")) {
+            int y;
+            try {
+                y = Integer.valueOf(i);
+            } catch (NumberFormatException e) {
+                continue;
+            }
+            debug("Adding okay id " + y);
+            q.add(y);
+        }
+        return q;
     }
 
     private void setupSQLite() {
@@ -173,12 +198,16 @@ public class CTT extends JavaPlugin {
             send("[Debug] " + message);
     }
 
-    public LinkedHashMap<String, Integer> getTopWins() {
+    public LinkedHashMap<String, Top> getTopWins() {
         return topWins;
     }
 
-    public LinkedHashMap<String, Integer> getTopKills() {
+    public LinkedHashMap<String, Top> getTopKills() {
         return topKills;
+    }
+    
+    public ArrayList<Integer> getOkayIds() {
+        return okayIds;
     }
 
     public boolean stats() {
@@ -244,8 +273,10 @@ public class CTT extends JavaPlugin {
             s.sendMessage(ChatColor.GOLD + "/ctt delete [id]");
         if (s.hasPermission("ctt.reset"))
             s.sendMessage(ChatColor.GOLD + "/ctt reset [id]");
-        if (s.hasPermission("ctt.top"))
+        if (s.hasPermission("ctt.stats")) {
             s.sendMessage(ChatColor.GOLD + "/ctt top");
+            s.sendMessage(ChatColor.GOLD + "/ctt stats (name)");
+        }
         if (s.hasPermission("ctt.join")) {
             s.sendMessage(ChatColor.GOLD + "/join [id]");
             s.sendMessage(ChatColor.GOLD + "/leave");
@@ -616,13 +647,13 @@ public class CTT extends JavaPlugin {
         }
 
         else if (args[0].equalsIgnoreCase("top")) {
-            if (sender.hasPermission("ctt.top")) {
+            if (sender.hasPermission("ctt.stats")) {
                 StringBuilder sb = new StringBuilder();
                 sb.append(ChatColor.GOLD + "Top Wins: " + ChatColor.GREEN);
                 int cap = 0;
-                for (Entry<String, Integer> en : topWins.entrySet()) {
+                for (Entry<String, Top> en : topWins.entrySet()) {
                     if (cap < 10) {
-                        sb.append(ChatColor.BLUE.toString() + (cap + 1) + ". " + ChatColor.GREEN + en.getKey() + " (" + en.getValue() + "), ");
+                        sb.append(ChatColor.RED.toString() + (cap + 1) + ". " + ChatColor.GREEN + en.getKey() + " (" + en.getValue().getValue() + "), ");
                     } else {
                         break;
                     }
@@ -633,9 +664,9 @@ public class CTT extends JavaPlugin {
                 sb.append("\n");
                 sb.append(ChatColor.GOLD + "Top Kills: " + ChatColor.GREEN);
                 cap = 0;
-                for (Entry<String, Integer> en : topKills.entrySet()) {
+                for (Entry<String, Top> en : topKills.entrySet()) {
                     if (cap < 10) {
-                        sb.append(ChatColor.BLUE.toString() + (cap + 1) + ". " + ChatColor.GREEN + en.getKey() + " (" + en.getValue() + "), ");
+                        sb.append(ChatColor.RED.toString() + (cap + 1) + ". " + ChatColor.GREEN + en.getKey() + " (" + en.getValue().getValue() + "), ");
                     } else {
                         break;
                     }
@@ -646,7 +677,44 @@ public class CTT extends JavaPlugin {
                 sender.sendMessage(sb.toString());
                 return true;
             } else {
-                sender.sendMessage(ChatColor.RED + "You do not have permission (ctt.top)");
+                sender.sendMessage(ChatColor.RED + "You do not have permission (ctt.stats)");
+                return true;
+            }
+        }
+
+        else if (args[0].equalsIgnoreCase("stats")) {
+            if (sender.hasPermission("ctt.stats")) {
+                PlayerStats s = null;
+                if (args.length == 1) {
+                    s = playerStats.get(sender.getName());
+                }
+                else if (args.length == 2) {
+                    s = playerStats.get(args[1]);
+                } else {
+                    sender.sendMessage(ChatColor.GOLD + "/ctt stats (name)");
+                    return true;
+                }
+                if (s == null) {
+                    sender.sendMessage(ChatColor.RED + "You don't have any stats yet. Play some games first!");
+                    return true;
+                }
+                StringBuilder sb = new StringBuilder();
+                sb.append(ChatColor.GREEN + "Stats for " + ChatColor.RED + s.getName() + "\n");
+                if (topWins.containsKey(s.getName())) {
+                    sb.append(ChatColor.GREEN + "Wins: " + ChatColor.GOLD + s.getWins() + ChatColor.RED + " (Rank " + ChatColor.GOLD + topWins.get(s.getName()).getRank() + ChatColor.RED + ")\n");
+                } else {
+                    sb.append(ChatColor.GREEN + "Wins: " + ChatColor.GOLD + s.getWins() + "\n");
+                }
+                sb.append(ChatColor.GREEN + "Losses: " + s.getLosses() + "\n");
+                if (topKills.containsKey(s.getName())) {
+                    sb.append(ChatColor.GREEN + "Kills: " + ChatColor.GOLD + s.getKills() + ChatColor.RED + " (Rank " + ChatColor.GOLD + topKills.get(s.getName()).getRank() + ChatColor.RED + ")\n");
+                } else {
+                    sb.append(ChatColor.GREEN + "Deaths: " + ChatColor.GOLD + s.getDeaths());
+                }
+                sender.sendMessage(sb.toString());
+                return true;
+            } else {
+                sender.sendMessage(ChatColor.RED + "You do not have permission (ctt.stats)");
                 return true;
             }
         }
