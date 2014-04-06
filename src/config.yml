@@ -16,19 +16,19 @@ max-players: 10
 # Colors can be added by using ^ followed by the standard color code
 #  Codes are found here: http://minecraft.gamepedia.com/Formatting_codes
 #  Example: ^4 - This will produce Dark Red
-# Use %killer% for the killer's name, and %victim% for the victim's name
-kill-message: '%killer% has crucified %victim%
+# Use %killer% for the killers name, and %victim% for the victims name
+kill-message: '%killer% has crucified %victim%'
  
 # Stats do not query the database too much, however, the more players, the more queries
-# Only when a player's stats have been changed will this plugin query the database about it
-# Queries are handled on a separate thread, so they will not slow the server unless it's running full capacity
+# Only when a players stats have been changed will this plugin query the database about it
+# Queries are handled on a separate thread, so they will not slow the server unless its running full capacity
 # To disable, set this to false
 enable-stats: true
  
 # SQLite is a local, fast database
 # MySQL is on a server, usually remote, and may have a ping lag to it
-# For local SQLite, set 'sql' equal to 'SQLite'.
-# For remote or local MySQL, set 'sql' equal to 'MySQL' and set the MySQL options accordingly.
+# For local SQLite, set sql equal to SQLite.
+# For remote or local MySQL, set sql equal to MySQL and set the MySQL options accordingly.
 sql: SQLite
 MySQL:
     hostname: 'localhost'
