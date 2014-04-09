@@ -13,7 +13,7 @@ public class PlayerData {
     private ItemStack[] player_armor;
     private GameMode player_gamemode;
     private Kit k;
-    
+
     public PlayerData(Player player, Kit k) {
         if (k == null)
             CTT.debug("Player " + player.getName() + "'s kit it null");
@@ -23,7 +23,7 @@ public class PlayerData {
         this.k = k;
         CTT.debug("New PlayerData for " + player.getName() + ", kit: " + k.getName());
     }
-    
+
     public ItemStack[] getPlayerInventory() {
         return player_inventory;
     }
@@ -35,11 +35,11 @@ public class PlayerData {
     public GameMode getPlayerGameMode() {
         return player_gamemode;
     }
-    
+
     public Kit getKit() {
         return k;
     }
-    
+
     public void setKit(Kit k) {
         this.k = k;
     }

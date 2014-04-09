@@ -53,7 +53,7 @@ public class CTTGame extends Game {
     private final HashMap<String, PlayerData> pd = new HashMap<String, PlayerData>();
     private HashMap<String, Kit> lastKits = new HashMap<String, Kit>();
     private final List<Kit> dK = new ArrayList<Kit>();
-    
+
     private CTTTeam b = new CTTTeam(ChatColor.BLUE + "Blue Team");
     private CTTTeam r = new CTTTeam(ChatColor.RED + "Red Team");
 
@@ -391,7 +391,7 @@ public class CTTGame extends Game {
         player.getInventory().setHeldItemSlot(0);
         player.updateInventory();
     }
-    
+
     public void resetPlayerInventory(Player player, Kit k) {
         if (k == null) {
             debug("Kit provided is null, resetting for player " + player.getName());
@@ -481,7 +481,7 @@ public class CTTGame extends Game {
             rLoc4.getBlock().setType(Material.GOLD_BLOCK);
         }
     }
-    
+
     public Kit getKit(String p) {
         if (getPlayers().contains(p)) {
             if (pd.get(p) != null) {
@@ -494,7 +494,7 @@ public class CTTGame extends Game {
             return null;
         }
     }
-    
+
     public HashMap<String, PlayerData> getPlayerData() {
         return pd;
     }
