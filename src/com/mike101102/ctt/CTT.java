@@ -54,6 +54,9 @@ public class CTT extends JavaPlugin {
     public void onEnable() {
         if (new File("plugins/CaptureTheTower/config.yml").exists()) {
             debug("Config found, copying any missing defaults");
+            getConfig().addDefault("kits.Warrior", null);
+            getConfig().addDefault("kits.Archer", null);
+            getConfig().addDefault("kits.Runner", null);
             getConfig().options().copyDefaults(true);
             saveConfig();
         } else {
@@ -187,7 +190,7 @@ public class CTT extends JavaPlugin {
         GameAPIMain.onDisable();
         getServer().getScheduler().cancelTasks(this);
     }
-    
+
     private ArrayList<Integer> getOkayIdsFromConfig() {
         ArrayList<Integer> q = new ArrayList<Integer>();
         for (String i : getConfig().getString("gold-block-ids").replaceAll(" ", "").split(",")) {
@@ -228,7 +231,7 @@ public class CTT extends JavaPlugin {
     public LinkedHashMap<String, Top> getTopKills() {
         return topKills;
     }
-    
+
     public ArrayList<Integer> getOkayIds() {
         return okayIds;
     }
@@ -268,11 +271,11 @@ public class CTT extends JavaPlugin {
     public String convert(String string) {
         return ChatColor.translateAlternateColorCodes("^".charAt(0), string);
     }
-    
+
     public HashMap<String, Kit> getKits() {
         return kits;
     }
-    
+
     public ItemStack convertItem(String i) {
         ItemStack a;
         try {
@@ -376,6 +379,24 @@ public class CTT extends JavaPlugin {
                         return true;
                     }
                 } else {
+                    String w = player.getWorld().getName();
+                    int i = 0;
+                    Game g = null;
+                    for (Entry<Integer, Game> en : GameAPIMain.getRunners().entrySet()) {
+                        if (en.getValue().getTeamSpawns().get(0).getWorld().getName().equalsIgnoreCase(w)) {
+                            i++;
+                            if (i > 1) {
+                                break;
+                            }
+                            g = en.getValue();
+                        }
+                    }
+                    if (i == 1 && !g.getPlayers().contains(player.getName())) {
+                        if (!EventHandle.callPlayerJoinGameEvent(g, player).isCancelled()) {
+                            g.addPlayer(player);
+                            return true;
+                        }
+                    }
                     player.sendMessage(ChatColor.GOLD + "/join [id]");
                     return true;
                 }
@@ -738,8 +759,7 @@ public class CTT extends JavaPlugin {
                 PlayerStats s = null;
                 if (args.length == 1) {
                     s = playerStats.get(sender.getName());
-                }
-                else if (args.length == 2) {
+                } else if (args.length == 2) {
                     s = playerStats.get(args[1]);
                 } else {
                     sender.sendMessage(ChatColor.GOLD + "/ctt stats (name)");
@@ -769,7 +789,7 @@ public class CTT extends JavaPlugin {
                 return true;
             }
         }
-        
+
         else if (args[0].equalsIgnoreCase("kit")) {
             if (sender instanceof Player) {
                 Player player = (Player) sender;
@@ -811,7 +831,7 @@ public class CTT extends JavaPlugin {
                 return true;
             }
         }
-        
+
         else if (args[0].equalsIgnoreCase("kits")) {
             StringBuilder sb = new StringBuilder();
             sb.append(ChatColor.RED + "Kits you can use\n" + ChatColor.GOLD);
