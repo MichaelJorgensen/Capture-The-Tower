@@ -73,7 +73,7 @@ public class CTT extends JavaPlugin {
                     t.add(u);
                 }
             }
-            kits.put(i, new Kit(i, getConfig().getString("kits." + i + ".permission"), t));
+            kits.put(i.toLowerCase(), new Kit(i, getConfig().getString("kits." + i + ".permission"), t));
         }
         if (s != null) {
             if (s.equalsIgnoreCase("mysql")) {
@@ -323,6 +323,10 @@ public class CTT extends JavaPlugin {
         if (s.hasPermission("ctt.stats")) {
             s.sendMessage(ChatColor.GOLD + "/ctt top");
             s.sendMessage(ChatColor.GOLD + "/ctt stats (name)");
+        }
+        if (s.hasPermission("ctt.kit")) {
+            s.sendMessage(ChatColor.GOLD + "/ctt kit [name]");
+            s.sendMessage(ChatColor.GOLD + "/ctt kits");
         }
         if (s.hasPermission("ctt.join")) {
             s.sendMessage(ChatColor.GOLD + "/join [id]");
@@ -771,8 +775,8 @@ public class CTT extends JavaPlugin {
                 Player player = (Player) sender;
                 if (player.hasPermission("ctt.kit")) {
                     if (args.length == 2) {
-                        if (kits.get(args[1]) != null) {
-                            Kit i = kits.get(args[1]);
+                        if (kits.get(args[1].toLowerCase()) != null) {
+                            Kit i = kits.get(args[1].toLowerCase());
                             if (player.hasPermission(i.getPermission())) {
                                 for (Entry<Integer, Game> en : GameAPIMain.getRunners().entrySet()) {
                                     if (en.getValue() instanceof CTTGame) {
@@ -806,6 +810,20 @@ public class CTT extends JavaPlugin {
                 sender.sendMessage(ChatColor.RED + "You must be a player to pick a kit!");
                 return true;
             }
+        }
+        
+        else if (args[0].equalsIgnoreCase("kits")) {
+            StringBuilder sb = new StringBuilder();
+            sb.append(ChatColor.RED + "Kits you can use\n" + ChatColor.GOLD);
+            for (Entry<String, Kit> en : kits.entrySet()) {
+                if (sender.hasPermission(en.getValue().getPermission())) {
+                    sb.append(en.getValue().getName() + ", ");
+                }
+            }
+            sb.deleteCharAt(sb.length() - 1);
+            sb.deleteCharAt(sb.length() - 1);
+            sender.sendMessage(sb.toString());
+            return true;
         }
         help(sender);
         return true;
