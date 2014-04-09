@@ -4,6 +4,8 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Map.Entry;
 import java.util.Random;
 
 import org.bukkit.Bukkit;
@@ -40,20 +42,18 @@ public class CTTGame extends Game {
     private static ItemStack leggings = new ItemStack(Material.IRON_LEGGINGS);
     private static ItemStack boots = new ItemStack(Material.IRON_BOOTS);
 
-    private static ItemStack sword = new ItemStack(Material.DIAMOND_SWORD);
-    private static ItemStack bow = new ItemStack(Material.BOW);
-    private static ItemStack arrow = new ItemStack(Material.ARROW, 30);
-    private static ItemStack axe = new ItemStack(Material.DIAMOND_PICKAXE);
-
     private Scoreboard board;
     private Score blueScore;
     private Score redScore;
 
     private String prefix = this.getName() + ChatColor.RESET;
     private boolean reset = false;
+    private boolean lastKeepKits = false;
 
-    private HashMap<String, PlayerData> pd = new HashMap<String, PlayerData>();
-
+    private final HashMap<String, PlayerData> pd = new HashMap<String, PlayerData>();
+    private HashMap<String, Kit> lastKits = new HashMap<String, Kit>();
+    private final List<Kit> dK = new ArrayList<Kit>();
+    
     private CTTTeam b = new CTTTeam(ChatColor.BLUE + "Blue Team");
     private CTTTeam r = new CTTTeam(ChatColor.RED + "Red Team");
 
@@ -87,6 +87,11 @@ public class CTTGame extends Game {
         rLoc4 = new Location(rLoc1.getWorld(), rLoc3.getX(), rLoc3.getY() + 1, rLoc3.getZ());
         this.timeLimit = timeLimit;
         resetGoalBlocks();
+        for (Entry<String, Kit> en : plugin.getKits().entrySet()) {
+            if (en.getValue().getPermission().equalsIgnoreCase("ctt.kit")) {
+                dK.add(en.getValue());
+            }
+        }
         debug("Game is ready");
     }
 
@@ -106,18 +111,22 @@ public class CTTGame extends Game {
         player.setFireTicks(0);
         player.setFlying(false);
         player.setFoodLevel(20);
-        pd.put(player.getName(), new PlayerData(player));
         getPlayers().add(player.getName());
+        if (lastKeepKits) {
+            pd.put(player.getName(), new PlayerData(player, lastKits.get(player.getName())));
+        } else {
+            pd.put(player.getName(), new PlayerData(player, getKit(player.getName())));
+        }
         if (b.getPlayers().size() > r.getPlayers().size()) {
             r.getPlayers().add(player.getName());
-            resetPlayerInventory(player);
+            resetPlayerInventory(player, pd.get(player.getName()).getKit());
             player.teleport(this.getTeamSpawns().get(1));
             if (!reset) {
                 sendGameMessage(player.getDisplayName() + ChatColor.GOLD + " has joined the " + r.getName() + ChatColor.GOLD + "!");
             }
         } else {
             b.getPlayers().add(player.getName());
-            resetPlayerInventory(player);
+            resetPlayerInventory(player, pd.get(player.getName()).getKit());
             player.teleport(this.getTeamSpawns().get(0));
             if (!reset) {
                 sendGameMessage(player.getDisplayName() + ChatColor.GOLD + " has joined the " + b.getName() + ChatColor.GOLD + "!");
@@ -144,7 +153,10 @@ public class CTTGame extends Game {
         player.getInventory().clear();
         player.getInventory().setContents(pd.get(player.getName()).getPlayerInventory());
         player.getInventory().setArmorContents(pd.get(player.getName()).getPlayerArmor());
-        player.setGameMode(pd.get(player.getName()).getPlayerGameMode());
+        GameMode m = pd.get(player.getName()).getPlayerGameMode();
+        if (player.getGameMode() != m) {
+            player.setGameMode(m);
+        }
         player.updateInventory();
         pd.remove(player.getName());
         player.teleport(player.getWorld().getSpawnLocation());
@@ -214,16 +226,16 @@ public class CTTGame extends Game {
             if (bScore > rScore) {
                 this.sendGameMessage(ChatColor.BLUE + "Blue Team Wins!");
                 blueTeamWin();
-                resetGame(false);
+                resetGame(false, true);
                 return;
             } else if (bScore < rScore) {
                 this.sendGameMessage(ChatColor.RED + "Red Team Wins!");
                 redTeamWin();
-                resetGame(false);
+                resetGame(false, true);
                 return;
             } else {
                 this.sendGameMessage(ChatColor.GOLD + "We have a Tie!");
-                resetGame(false);
+                resetGame(false, true);
                 return;
             }
         }
@@ -231,12 +243,12 @@ public class CTTGame extends Game {
         if (b.getBlocks() >= 4) {
             sendGameMessage(ChatColor.BLUE + "Blue team wins!");
             blueTeamWin();
-            resetGame(false);
+            resetGame(false, true);
             return;
         } else if (r.getBlocks() >= 4) {
             sendGameMessage(ChatColor.RED + "Red team wins!");
             redTeamWin();
-            resetGame(false);
+            resetGame(false, true);
             return;
         }
 
@@ -244,7 +256,7 @@ public class CTTGame extends Game {
             if (b.getPlayers().size() == 0 || r.getPlayers().size() == 0) {
                 sendGameMessage(ChatColor.GOLD + "A team has left!");
                 debug("There is an empty team and the game is not reset, game is now resetting");
-                resetGame(true);
+                resetGame(true, true);
             }
         }
         blueScore.setScore(b.getBlocks());
@@ -366,16 +378,49 @@ public class CTTGame extends Game {
         if (player.getGameMode() != GameMode.SURVIVAL) {
             player.setGameMode(GameMode.SURVIVAL);
         }
-
+        Kit k = getKit(player.getName());
+        if (k != null) {
+            debug("Giving " + player.getName() + " kit " + k.getName());
+            for (ItemStack h : k.getContents()) {
+                player.getInventory().addItem(h);
+            }
+        }
         player.getInventory().setChestplate(chestplate);
         player.getInventory().setLeggings(leggings);
         player.getInventory().setBoots(boots);
-        player.getInventory().addItem(sword);
-        player.getInventory().addItem(bow);
-        player.getInventory().addItem(arrow);
-        player.getInventory().addItem(axe);
         player.getInventory().setHeldItemSlot(0);
         player.updateInventory();
+    }
+    
+    public void resetPlayerInventory(Player player, Kit k) {
+        if (k == null) {
+            debug("Kit provided is null, resetting for player " + player.getName());
+            resetPlayerInventory(player);
+            return;
+        }
+        debug("Resetting player inv, given kit: " + k.getName());
+        player.getInventory().clear();
+        if (b.getPlayers().contains(player.getName())) {
+            player.getInventory().setHelmet(blueHelmet);
+        } else {
+            player.getInventory().setHelmet(redHelmet);
+        }
+
+        if (player.getGameMode() != GameMode.SURVIVAL) {
+            player.setGameMode(GameMode.SURVIVAL);
+        }
+        if (k != null) {
+            debug("Giving " + player.getName() + " kit " + k.getName());
+            for (ItemStack h : k.getContents()) {
+                player.getInventory().addItem(h);
+            }
+        }
+        player.getInventory().setChestplate(chestplate);
+        player.getInventory().setLeggings(leggings);
+        player.getInventory().setBoots(boots);
+        player.getInventory().setHeldItemSlot(0);
+        player.updateInventory();
+        pd.get(player.getName()).setKit(k);
     }
 
     public void addBlocks(int b) {
@@ -436,16 +481,38 @@ public class CTTGame extends Game {
             rLoc4.getBlock().setType(Material.GOLD_BLOCK);
         }
     }
+    
+    public Kit getKit(String p) {
+        if (getPlayers().contains(p)) {
+            if (pd.get(p) != null) {
+                if (pd.get(p).getKit() != null) {
+                    return pd.get(p).getKit();
+                }
+            }
+            return dK.get(new Random().nextInt(dK.size()));
+        } else {
+            return null;
+        }
+    }
+    
+    public HashMap<String, PlayerData> getPlayerData() {
+        return pd;
+    }
 
-    public void resetGame(boolean message) {
+    public void resetGame(boolean message, boolean keepKits) {
         debug("Resetting game " + getGameId());
         reset = true;
+        lastKeepKits = keepKits;
         time = 0;
         resetScores();
         for (Entity c : bLoc1.getWorld().getEntities()) {
             if (c instanceof Item) {
                 c.remove();
             }
+        }
+        lastKits.clear();
+        for (Entry<String, PlayerData> en : pd.entrySet()) {
+            lastKits.put(en.getKey(), en.getValue().getKit());
         }
         @SuppressWarnings("unchecked")
         ArrayList<String> list = (ArrayList<String>) this.getPlayers().clone();
@@ -460,6 +527,8 @@ public class CTTGame extends Game {
             addPlayer(Bukkit.getPlayer(i));
         }
         reset = false;
+        lastKeepKits = false;
+        lastKits.clear();
         debug("Reset complete");
     }
 }

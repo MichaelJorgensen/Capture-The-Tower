@@ -7,14 +7,18 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map.Entry;
+import java.util.Random;
 
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.mcstats.Metrics;
 
@@ -43,15 +47,34 @@ public class CTT extends JavaPlugin {
     public HashMap<String, Location> creating_goals_ids = new HashMap<String, Location>();
 
     private final HashMap<String, PlayerStats> playerStats = new HashMap<String, PlayerStats>();
+    private final HashMap<String, Kit> kits = new HashMap<String, Kit>();
     private final LinkedHashMap<String, Top> topWins = new LinkedHashMap<String, Top>();
     private final LinkedHashMap<String, Top> topKills = new LinkedHashMap<String, Top>();
 
     public void onEnable() {
-        saveDefaultConfig();
+        if (new File("plugins/CaptureTheTower/config.yml").exists()) {
+            debug("Config found, copying any missing defaults");
+            getConfig().options().copyDefaults(true);
+            saveConfig();
+        } else {
+            debug("Config not found, copying default config");
+            saveDefaultConfig();
+        }
         debug = shouldDebug();
         stats = getConfig().getBoolean("enable-stats");
         String s = getConfig().getString("sql");
         okayIds = getOkayIdsFromConfig();
+        debug("Loading kits");
+        for (String i : getConfig().getConfigurationSection("kits").getKeys(false)) {
+            List<ItemStack> t = new ArrayList<ItemStack>();
+            for (String j : getConfig().getString("kits." + i + ".contents").replaceAll(" ", "").split(",")) {
+                ItemStack u = convertItem(j);
+                if (u != null) {
+                    t.add(u);
+                }
+            }
+            kits.put(i, new Kit(i, getConfig().getString("kits." + i + ".permission"), t));
+        }
         if (s != null) {
             if (s.equalsIgnoreCase("mysql")) {
                 debug("Selecting MySQL");
@@ -244,6 +267,30 @@ public class CTT extends JavaPlugin {
 
     public String convert(String string) {
         return ChatColor.translateAlternateColorCodes("^".charAt(0), string);
+    }
+    
+    public HashMap<String, Kit> getKits() {
+        return kits;
+    }
+    
+    public ItemStack convertItem(String i) {
+        ItemStack a;
+        try {
+            String[] b = i.split(";");
+            a = new ItemStack(Material.getMaterial(Integer.parseInt(b[0])));
+            try {
+                if (b[1].equalsIgnoreCase("r")) {
+                    a.setAmount(new Random().nextInt(33));
+                } else {
+                    a.setAmount(Integer.parseInt(b[1]));
+                }
+                a.setDurability(Short.parseShort(b[2]));
+            } catch (Exception e) {
+            }
+        } catch (Exception e) {
+            return null;
+        }
+        return a;
     }
 
     public void cancelCreation(Player player) {
@@ -625,7 +672,7 @@ public class CTT extends JavaPlugin {
                     if (game != null) {
                         if (game instanceof CTTGame) {
                             debug("Resetting game " + id);
-                            ((CTTGame) game).resetGame(true);
+                            ((CTTGame) game).resetGame(true, false);
                             sender.sendMessage(ChatColor.GOLD.toString() + id + ChatColor.GREEN + " has been reset");
                             return true;
                         } else {
@@ -715,6 +762,48 @@ public class CTT extends JavaPlugin {
                 return true;
             } else {
                 sender.sendMessage(ChatColor.RED + "You do not have permission (ctt.stats)");
+                return true;
+            }
+        }
+        
+        else if (args[0].equalsIgnoreCase("kit")) {
+            if (sender instanceof Player) {
+                Player player = (Player) sender;
+                if (player.hasPermission("ctt.kit")) {
+                    if (args.length == 2) {
+                        if (kits.get(args[1]) != null) {
+                            Kit i = kits.get(args[1]);
+                            if (player.hasPermission(i.getPermission())) {
+                                for (Entry<Integer, Game> en : GameAPIMain.getRunners().entrySet()) {
+                                    if (en.getValue() instanceof CTTGame) {
+                                        if (en.getValue().getPlayers().contains(player.getName())) {
+                                            CTTGame g = (CTTGame) en.getValue();
+                                            g.resetPlayerInventory(player, i);
+                                            player.sendMessage(ChatColor.GOLD + i.getName() + ChatColor.GREEN + " has been selected");
+                                            return true;
+                                        }
+                                    }
+                                }
+                                player.sendMessage(ChatColor.RED + "You must be in a game to choose a kit");
+                                return true;
+                            } else {
+                                player.sendMessage(ChatColor.RED + "You do not have permission (" + i.getPermission() + ")");
+                                return true;
+                            }
+                        } else {
+                            player.sendMessage(ChatColor.GOLD + args[1] + ChatColor.RED + " is not a valid kit");
+                            return true;
+                        }
+                    } else {
+                        player.sendMessage(ChatColor.GOLD + "/ctt kit [name]");
+                        return true;
+                    }
+                } else {
+                    player.sendMessage(ChatColor.RED + "You do not have permission (ctt.kit)");
+                    return true;
+                }
+            } else {
+                sender.sendMessage(ChatColor.RED + "You must be a player to pick a kit!");
                 return true;
             }
         }

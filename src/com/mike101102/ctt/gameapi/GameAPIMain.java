@@ -3,6 +3,7 @@ package com.mike101102.ctt.gameapi;
 import java.util.HashMap;
 import java.util.Map.Entry;
 
+import com.mike101102.ctt.CTT;
 import com.mike101102.ctt.gameapi.events.EventHandle;
 
 public class GameAPIMain {
@@ -10,11 +11,11 @@ public class GameAPIMain {
     private static HashMap<Integer, Game> runningGames = new HashMap<Integer, Game>();
 
     public static void onDisable() {
-        send("Shutting down games");
+        CTT.send("Shutting down games");
         for (Entry<Integer, Game> en : getRunners().entrySet()) {
             en.getValue().shutdown();
         }
-        send("Games shutdown");
+        CTT.send("Games shutdown");
     }
 
     /**
@@ -54,9 +55,5 @@ public class GameAPIMain {
      */
     public static HashMap<Integer, Game> getRunners() {
         return runningGames;
-    }
-
-    public static void send(String message) {
-        System.out.println("[GameAPI] " + message);
     }
 }

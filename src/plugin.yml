@@ -1,5 +1,5 @@
 name: CaptureTheTower
-version: 0.4.1
+version: 0.5
 description: Capture the Tower game
 author: mike101102
 main: com.mike101102.ctt.CTT
@@ -35,6 +35,7 @@ permissions:
             ctt.list: true
             ctt.info: true
             ctt.stats: true
+            ctt.kit: true
     ctt.create:
         description: Allows you to create new games
         default: op
@@ -55,4 +56,7 @@ permissions:
         default: op
     ctt.stats:
         description: Allows you to view the top scores
+        default: true
+    ctt.kit:
+        description: Allows you to use some kits
         default: true

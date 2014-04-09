@@ -87,7 +87,7 @@ public class CTTListener implements Listener {
                     s = new PlayerStats(player.getName(), 0, 0, 0, 1);
                 }
                 plugin.getPlayerStats().put(player.getName(), s);
-                g.resetPlayerInventory(player);
+                g.resetPlayerInventory(player, g.getPlayerData().get(player.getName()).getKit());
                 if (g.getPlayers().contains(player.getName())) {
                     if (g.getBlueTeam().getPlayers().contains(player.getName())) {
                         player.teleport(g.getTeamSpawns().get(0));
@@ -120,7 +120,7 @@ public class CTTListener implements Listener {
         if (player.hasPermission("GameAPI.join")) {
             if (okayNoArgCommands.contains(event.getMessage().toLowerCase()))
                 return;
-            if (okayArgCommands.contains(event.getMessage().toLowerCase().split(" ")[0]))
+            if (okayArgCommands.contains(event.getMessage().toLowerCase().split(" ")[0]) || event.getMessage().toLowerCase().startsWith("/ctt kit"))
                 return;
             for (Entry<Integer, Game> en : GameAPIMain.getRunners().entrySet()) {
                 if (!(en.getValue() instanceof CTTGame))

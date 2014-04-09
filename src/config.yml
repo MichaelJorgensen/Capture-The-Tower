@@ -1,34 +1,28 @@
 # Questions, concerns, ideas, etc, please use the ticket system, comments, or PM me on BukkitDev
 #  http://dev.bukkit.org/bukkit-plugins/ctt/
-
-# The ID numbers of blocks that gold blocks can be placed on (can always place on other gold blocks)
-gold-block-ids: 49, 7
-
-debug: false
- 
-# The time limit for games, in seconds
-time-limit: 180
- 
-# The max amount of players in one game
-max-players: 10
- 
-# The message displayed when a player is killed
-# Colors can be added by using ^ followed by the standard color code
+# 
+# Separate gold block ids with commas
+# Time limit is in seconds
+# For the kill message, colors can be added using ^ followed by the standard color code
 #  Codes are found here: http://minecraft.gamepedia.com/Formatting_codes
 #  Example: ^4 - This will produce Dark Red
-# Use %killer% for the killers name, and %victim% for the victims name
+# Stats query the database every so often (more players = more queries)
+#  If you don't want your database queried as much, disable stats
+# SQL option is either SQLite or MySQL
+# 
+# Kits with the permission ctt.kit will be randomly selected from when a player joins a game
+# Kits with the permission ctt.kit.x, where x is anything, can only be picked by a player with
+#  the permission ctt.kit.x
+# Kits are selected through commands, so make the name of the kit easy and with NO SPACES!!!
+#  Recommendation: Use a sign command plugin to allow players to use signs at spawn to choose kits
+# The syntax for the contents is ID;AMOUNT;DURABILITY
+#  Note: amount and durability are not required to be given
+gold-block-ids: 49, 7
+debug: false
+time-limit: 180
+max-players: 10
 kill-message: '%killer% has crucified %victim%'
- 
-# Stats do not query the database too much, however, the more players, the more queries
-# Only when a players stats have been changed will this plugin query the database about it
-# Queries are handled on a separate thread, so they will not slow the server unless its running full capacity
-# To disable, set this to false
 enable-stats: true
- 
-# SQLite is a local, fast database
-# MySQL is on a server, usually remote, and may have a ping lag to it
-# For local SQLite, set sql equal to SQLite.
-# For remote or local MySQL, set sql equal to MySQL and set the MySQL options accordingly.
 sql: SQLite
 MySQL:
     hostname: 'localhost'
@@ -36,3 +30,13 @@ MySQL:
     database: 'CTT'
     username: 'minecraft'
     password: 'notch'
+kits:
+    Warrior:
+        permission: ctt.kit
+        contents: 285, 260;5, 397;1;4, 278
+    Archer:
+        permission: ctt.kit
+        contents: 261, 262;64
+    Runner:
+        permission: ctt.kit.run
+        contents: 267, 373;3;8226
