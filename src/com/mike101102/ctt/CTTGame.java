@@ -13,8 +13,6 @@ import org.bukkit.ChatColor;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
-import org.bukkit.entity.Entity;
-import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.scoreboard.DisplaySlot;
@@ -532,11 +530,6 @@ public class CTTGame extends Game {
         lastKeepKits = keepKits;
         time = 0;
         resetScores();
-        for (Entity c : bLoc1.getWorld().getEntities()) {
-            if (c instanceof Item) {
-                c.remove();
-            }
-        }
         lastKits.clear();
         for (Entry<String, PlayerData> en : pd.entrySet()) {
             lastKits.put(en.getKey(), en.getValue().getKit());
