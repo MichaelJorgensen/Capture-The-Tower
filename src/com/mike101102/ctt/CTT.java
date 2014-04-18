@@ -48,6 +48,7 @@ public class CTT extends JavaPlugin {
 
     private final HashMap<String, PlayerStats> playerStats = new HashMap<String, PlayerStats>();
     private final HashMap<String, Kit> kits = new HashMap<String, Kit>();
+    private final HashMap<String, Integer> spawnDelays = new HashMap<String, Integer>();
     private final LinkedHashMap<String, Top> topWins = new LinkedHashMap<String, Top>();
     private final LinkedHashMap<String, Top> topKills = new LinkedHashMap<String, Top>();
 
@@ -107,6 +108,7 @@ public class CTT extends JavaPlugin {
         }
         debug("Setting up games...");
         int gamesSetup = 0;
+        int spawnDelay = getSpawnDelayFromConfig();
         try {
             ResultSet r = sql.query("SELECT gameid FROM ctt");
             while (r.next()) {
@@ -128,7 +130,7 @@ public class CTT extends JavaPlugin {
                     Location bluegoal = new Location(getServer().getWorld(rs.getString("spawnworld")), rs.getDouble("gx1"), rs.getDouble("gy1"), rs.getDouble("gz1"));
                     Location redgoal = new Location(getServer().getWorld(rs.getString("spawnworld")), rs.getDouble("gx2"), rs.getDouble("gy2"), rs.getDouble("gz2"));
                     debug(gameid + "'s spawns and locations loaded");
-                    GameAPIMain.addRunner(new CTTGame(this, gameid, getMaxPlayers(), getTimeLimit(), sign, spawns, bluegoal, redgoal));
+                    GameAPIMain.addRunner(new CTTGame(this, gameid, getMaxPlayers(), getTimeLimit(), spawnDelay, sign, spawns, bluegoal, redgoal));
                     debug("Game " + gameid + " setup successfully");
                     gamesSetup++;
                 } catch (SQLException e) {
@@ -235,6 +237,10 @@ public class CTT extends JavaPlugin {
     public ArrayList<Integer> getOkayIds() {
         return okayIds;
     }
+    
+    public HashMap<String, Integer> getSpawnDelays() {
+        return spawnDelays;
+    }
 
     public boolean stats() {
         return stats;
@@ -250,6 +256,10 @@ public class CTT extends JavaPlugin {
 
     public int getMaxPlayers() {
         return getConfig().getInt("max-players");
+    }
+    
+    public int getSpawnDelayFromConfig() {
+        return getConfig().getInt("spawn-delay");
     }
 
     private boolean shouldDebug() {
@@ -598,7 +608,7 @@ public class CTT extends JavaPlugin {
                             ArrayList<Location> teamspawns = new ArrayList<Location>();
                             teamspawns.add(spawn1);
                             teamspawns.add(spawn2);
-                            CTTGame game = new CTTGame(this, id, getMaxPlayers(), getTimeLimit(), null, teamspawns, goal1, goal2);
+                            CTTGame game = new CTTGame(this, id, getMaxPlayers(), getTimeLimit(), getSpawnDelayFromConfig(), null, teamspawns, goal1, goal2);
                             GameAPIMain.addRunner(game);
                             debug("Game created and added to runner list");
                             try {
@@ -780,8 +790,9 @@ public class CTT extends JavaPlugin {
                 if (topKills.containsKey(s.getName())) {
                     sb.append(ChatColor.GREEN + "Kills: " + ChatColor.GOLD + s.getKills() + ChatColor.RED + " (Rank " + ChatColor.GOLD + topKills.get(s.getName()).getRank() + ChatColor.RED + ")\n");
                 } else {
-                    sb.append(ChatColor.GREEN + "Deaths: " + ChatColor.GOLD + s.getDeaths());
+                    sb.append(ChatColor.GREEN + "Kills: " + ChatColor.GOLD + s.getKills());
                 }
+                sb.append(ChatColor.GREEN + "Deaths: " + ChatColor.GOLD + s.getDeaths());
                 sender.sendMessage(sb.toString());
                 return true;
             } else {

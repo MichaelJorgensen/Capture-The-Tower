@@ -17,6 +17,7 @@ import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.player.PlayerCommandPreprocessEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
+import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.ItemStack;
 
@@ -107,6 +108,8 @@ public class CTTListener implements Listener {
                     } else {
                         g.sendGameMessage(player.getDisplayName() + ChatColor.GOLD + " has died");
                     }
+                    plugin.getSpawnDelays().put(player.getName(), g.getSpawnDelay());
+                    player.sendMessage(ChatColor.RED + "Spawn delay: " + ChatColor.GOLD + g.getSpawnDelay() + ChatColor.RED + " more seconds");
                     CTT.debug(player.getName() + " has been killed, player reset complete");
                     return;
                 }
@@ -168,7 +171,7 @@ public class CTTListener implements Listener {
         }
     }
 
-    @EventHandler()
+    @EventHandler
     public void onPlayerQuit(PlayerQuitEvent event) {
         if (plugin.creating_game_ids.containsKey(event.getPlayer().getName())) {
             CTT.debug("Cancelling creation for " + event.getPlayer().getName() + " because he/she has left the game");
@@ -195,6 +198,17 @@ public class CTTListener implements Listener {
                 event.setCancelled(true);
                 noFire.remove(player.getName());
             }
+        }
+    }
+    
+    @EventHandler
+    public void onPlayerMove(PlayerMoveEvent event) {
+        Player player = event.getPlayer();
+        if (plugin.getSpawnDelays().containsKey(player.getName())) {
+            if (plugin.getSpawnDelays().get(player.getName()) == plugin.getSpawnDelayFromConfig()) {
+                return;
+            }
+            event.setCancelled(true);
         }
     }
 }

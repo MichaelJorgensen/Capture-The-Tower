@@ -35,6 +35,7 @@ public class CTTGame extends Game {
     private int time = 0;
     private int goalCheck = 0;
     private int timeLimit;
+    private int spawnDelay;
 
     private static ItemStack blueHelmet = new ItemStack(Material.WOOL, 1, (byte) 11);
     private static ItemStack redHelmet = new ItemStack(Material.WOOL, 1, (byte) 14);
@@ -67,7 +68,7 @@ public class CTTGame extends Game {
     private Location rLoc3;
     private Location rLoc4;
 
-    public CTTGame(CTT plugin, int gameid, int maxPlayers, int timeLimit, Location signLoc, ArrayList<Location> teamspawns, Location blueGoal, Location redGoal) {
+    public CTTGame(CTT plugin, int gameid, int maxPlayers, int timeLimit, int spawnDelay, Location signLoc, ArrayList<Location> teamspawns, Location blueGoal, Location redGoal) {
         super(plugin, gameid, maxPlayers, signLoc, ChatColor.GREEN + "[CTT]", GameStage.Waiting, teamspawns, 20L, 20L);
         this.plugin = plugin;
         sql = plugin.getSQL();
@@ -86,6 +87,7 @@ public class CTTGame extends Game {
         rLoc3 = new Location(rLoc1.getWorld(), rLoc2.getX(), rLoc2.getY() + 1, rLoc2.getZ());
         rLoc4 = new Location(rLoc1.getWorld(), rLoc3.getX(), rLoc3.getY() + 1, rLoc3.getZ());
         this.timeLimit = timeLimit;
+        this.spawnDelay = spawnDelay;
         resetGoalBlocks();
         for (Entry<String, Kit> en : plugin.getKits().entrySet()) {
             if (en.getValue().getPermission().equalsIgnoreCase("ctt.kit")) {
@@ -149,6 +151,7 @@ public class CTTGame extends Game {
         if (go > 0) {
             addBlocks(go);
         }
+        plugin.getSpawnDelays().remove(player.getName());
         player.setScoreboard(Bukkit.getScoreboardManager().getNewScoreboard());
         player.getInventory().clear();
         player.getInventory().setContents(pd.get(player.getName()).getPlayerInventory());
@@ -275,6 +278,23 @@ public class CTTGame extends Game {
             this.sendGameMessage(ChatColor.RED + "10 seconds left");
         } else if (left <= 3 && left > 0) {
             this.sendGameMessage(ChatColor.RED.toString() + left);
+        }
+
+        ArrayList<String> keysToRemove = new ArrayList<String>();
+        for (Entry<String, Integer> en : plugin.getSpawnDelays().entrySet()) {
+            if (getPlayers().contains(en.getKey())) {
+                plugin.getSpawnDelays().put(en.getKey(), en.getValue() - 1);
+                Player p = Bukkit.getPlayer(en.getKey());
+                p.sendMessage(ChatColor.RED + "Spawn delay: " + ChatColor.GOLD + plugin.getSpawnDelays().get(p.getName()) + ChatColor.RED + " more seconds");
+                if (en.getValue() < 1) {
+                    keysToRemove.add(en.getKey());
+                    p.sendMessage(ChatColor.GREEN + "You can move now!");
+                }
+            }
+        }
+        for (String i : keysToRemove) {
+            debug("Removing " + i + " from spawn delay list");
+            plugin.getSpawnDelays().remove(i);
         }
     }
 
@@ -497,6 +517,10 @@ public class CTTGame extends Game {
 
     public HashMap<String, PlayerData> getPlayerData() {
         return pd;
+    }
+
+    public int getSpawnDelay() {
+        return spawnDelay;
     }
 
     public void resetGame(boolean message, boolean keepKits) {
