@@ -289,7 +289,6 @@ public class CTTGame extends Game {
                 }
                 if (delay < 1) {
                     keysToRemove.add(en.getKey());
-                    p.sendMessage(ChatColor.GREEN + "You can move now!");
                 }
             }
         }

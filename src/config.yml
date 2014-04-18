@@ -22,7 +22,7 @@ debug: false
 time-limit: 180
 max-players: 10
 spawn-delay: 5
-kill-message: '%killer% has crucified %victim%'
+kill-message: '^4%killer% ^6has crucified ^4%victim%'
 enable-stats: true
 sql: SQLite
 MySQL:
