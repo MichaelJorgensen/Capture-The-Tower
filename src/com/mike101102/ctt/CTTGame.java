@@ -285,8 +285,11 @@ public class CTTGame extends Game {
             if (getPlayers().contains(en.getKey())) {
                 plugin.getSpawnDelays().put(en.getKey(), en.getValue() - 1);
                 Player p = Bukkit.getPlayer(en.getKey());
-                p.sendMessage(ChatColor.RED + "Spawn delay: " + ChatColor.GOLD + plugin.getSpawnDelays().get(p.getName()) + ChatColor.RED + " more seconds");
-                if (en.getValue() < 1) {
+                int delay = en.getValue();
+                if (delay > 0) {
+                    p.sendMessage(ChatColor.RED + "Spawn delay: " + ChatColor.GOLD + plugin.getSpawnDelays().get(p.getName()) + ChatColor.RED + " more seconds");
+                }
+                if (delay < 1) {
                     keysToRemove.add(en.getKey());
                     p.sendMessage(ChatColor.GREEN + "You can move now!");
                 }
