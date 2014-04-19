@@ -100,6 +100,7 @@ public class CTTListener implements Listener {
                     player.setSaturation(10f);
                     player.setFireTicks(0);
                     player.setFoodLevel(20);
+                    player.setFallDistance(0L);
                     noFire.add(player.getName());
                     if (event instanceof EntityDamageByEntityEvent && ((EntityDamageByEntityEvent) event).getDamager() instanceof Player) {
                         EntityDamageByEntityEvent ev = (EntityDamageByEntityEvent) event;
@@ -108,8 +109,10 @@ public class CTTListener implements Listener {
                     } else {
                         g.sendGameMessage(player.getDisplayName() + ChatColor.GOLD + " has died");
                     }
-                    plugin.getSpawnDelays().put(player.getName(), g.getSpawnDelay());
-                    player.sendMessage(ChatColor.RED + "Spawn delay: " + ChatColor.GOLD + g.getSpawnDelay() + ChatColor.RED + " more seconds");
+                    if (g.getSpawnDelay() > 0) {
+                        plugin.getSpawnDelays().put(player.getName(), g.getSpawnDelay());
+                        player.sendMessage(ChatColor.RED + "Spawn delay: " + ChatColor.GOLD + g.getSpawnDelay() + ChatColor.RED + " more seconds");
+                    }
                     CTT.debug(player.getName() + " has been killed, player reset complete");
                     return;
                 }
@@ -200,7 +203,7 @@ public class CTTListener implements Listener {
             }
         }
     }
-    
+
     @EventHandler
     public void onPlayerMove(PlayerMoveEvent event) {
         Player player = event.getPlayer();
