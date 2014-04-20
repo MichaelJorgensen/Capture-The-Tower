@@ -172,7 +172,7 @@ public class CTT extends JavaPlugin {
         }
         try {
             Metrics m = new Metrics(this);
-            
+
             Graph games = m.createGraph("Number of Games");
             games.addPlotter(new Plotter("Games") {
                 @Override
@@ -247,7 +247,7 @@ public class CTT extends JavaPlugin {
     public ArrayList<Integer> getOkayIds() {
         return okayIds;
     }
-    
+
     public HashMap<String, Integer> getSpawnDelays() {
         return spawnDelays;
     }
@@ -267,7 +267,7 @@ public class CTT extends JavaPlugin {
     public int getMaxPlayers() {
         return getConfig().getInt("max-players");
     }
-    
+
     public int getSpawnDelayFromConfig() {
         return getConfig().getInt("spawn-delay");
     }
@@ -866,7 +866,7 @@ public class CTT extends JavaPlugin {
             sender.sendMessage(sb.toString());
             return true;
         }
-        
+
         else if (args[0].equalsIgnoreCase("version")) {
             sender.sendMessage(getDescription().getFullName());
             return true;
