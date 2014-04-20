@@ -21,6 +21,8 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.mcstats.Metrics;
+import org.mcstats.Metrics.Graph;
+import org.mcstats.Metrics.Plotter;
 
 import com.mike101102.ctt.gameapi.Game;
 import com.mike101102.ctt.gameapi.GameAPIMain;
@@ -170,6 +172,14 @@ public class CTT extends JavaPlugin {
         }
         try {
             Metrics m = new Metrics(this);
+            
+            Graph games = m.createGraph("Number of Games");
+            games.addPlotter(new Plotter("Games") {
+                @Override
+                public int getValue() {
+                    return GameAPIMain.getRunners().size();
+                }
+            });
             m.start();
         } catch (IOException e) {
             e.printStackTrace();
@@ -854,6 +864,11 @@ public class CTT extends JavaPlugin {
             sb.deleteCharAt(sb.length() - 1);
             sb.deleteCharAt(sb.length() - 1);
             sender.sendMessage(sb.toString());
+            return true;
+        }
+        
+        else if (args[0].equalsIgnoreCase("version")) {
+            sender.sendMessage(getDescription().getFullName());
             return true;
         }
         help(sender);
