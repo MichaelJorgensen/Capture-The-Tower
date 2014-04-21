@@ -13,12 +13,12 @@ public class UpdateCheck extends BukkitRunnable {
 
     private CTT plugin;
     private File file;
-    
+
     public UpdateCheck(CTT plugin, File file) {
         this.plugin = plugin;
         this.file = file;
     }
-    
+
     @Override
     public void run() {
         Updater u;

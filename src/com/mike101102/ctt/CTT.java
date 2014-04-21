@@ -308,15 +308,15 @@ public class CTT extends JavaPlugin {
     public boolean newUpdate() {
         return newUpdate;
     }
-    
+
     public void setNewUpdate(boolean newUpdate) {
         this.newUpdate = newUpdate;
     }
-    
+
     public UpdateInfo getUpdateInfo() {
         return updateInfo;
     }
-    
+
     public void setUpdateInfo(UpdateInfo updateInfo) {
         this.updateInfo = updateInfo;
     }
