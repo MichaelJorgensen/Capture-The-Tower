@@ -8,6 +8,8 @@
 #  Example: ^4 - This will produce Dark Red
 # Stats query the database every so often (more players = more queries)
 #  If you don't want your database queried as much, disable stats
+# If update-check is true, the plugin will check BukkitDev for an update every once per hour
+#  Anyone with ctt.update as a permission will be notified when they login to the server when there is an update
 # SQL option is either SQLite or MySQL
 # 
 # Kits with the permission ctt.kit will be randomly selected from when a player joins a game
@@ -24,6 +26,7 @@ max-players: 10
 spawn-delay: 5
 kill-message: '^4%killer% ^6has crucified ^4%victim%'
 enable-stats: true
+update-check: true
 sql: SQLite
 MySQL:
     hostname: 'localhost'

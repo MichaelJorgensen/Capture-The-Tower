@@ -60,3 +60,6 @@ permissions:
     ctt.kit:
         description: Allows you to use some kits
         default: true
+    ctt.update:
+        description: Anyone with this will be notified of an update to this plugin when they join
+        default: op

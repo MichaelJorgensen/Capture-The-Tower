@@ -40,6 +40,8 @@ public class CTT extends JavaPlugin {
     private DatabaseOptions dop;
     private static boolean debug;
     private boolean stats;
+    private boolean newUpdate = false;
+    private UpdateInfo updateInfo = null;
     private StatsUpdater su;
     private ArrayList<Integer> okayIds;
 
@@ -184,6 +186,9 @@ public class CTT extends JavaPlugin {
         } catch (IOException e) {
             e.printStackTrace();
         }
+        if (shouldUpdateCheck()) {
+            getServer().getScheduler().scheduleAsyncRepeatingTask(this, new UpdateCheck(this, getFile()), 0L, 72000L);
+        }
     }
 
     public void onDisable() {
@@ -276,6 +281,10 @@ public class CTT extends JavaPlugin {
         return getConfig().getBoolean("debug");
     }
 
+    private boolean shouldUpdateCheck() {
+        return getConfig().getBoolean("update-check");
+    }
+
     public boolean debug() {
         return debug;
     }
@@ -294,6 +303,22 @@ public class CTT extends JavaPlugin {
 
     public HashMap<String, Kit> getKits() {
         return kits;
+    }
+
+    public boolean newUpdate() {
+        return newUpdate;
+    }
+    
+    public void setNewUpdate(boolean newUpdate) {
+        this.newUpdate = newUpdate;
+    }
+    
+    public UpdateInfo getUpdateInfo() {
+        return updateInfo;
+    }
+    
+    public void setUpdateInfo(UpdateInfo updateInfo) {
+        this.updateInfo = updateInfo;
     }
 
     public ItemStack convertItem(String i) {

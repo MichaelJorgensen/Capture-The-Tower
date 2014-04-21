@@ -17,6 +17,7 @@ import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.player.PlayerCommandPreprocessEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.ItemStack;
@@ -212,6 +213,16 @@ public class CTTListener implements Listener {
                 return;
             }
             event.setCancelled(true);
+        }
+    }
+
+    @EventHandler
+    public void onPlayerJoin(PlayerJoinEvent event) {
+        Player player = event.getPlayer();
+        if (player.hasPermission("ctt.update")) {
+            if (plugin.newUpdate()) {
+                player.sendMessage(ChatColor.GOLD + "Capute the Tower has a new update!\nCurrent Version: " + ChatColor.RED + plugin.getUpdateInfo().getCurrentVersion() + ChatColor.GOLD + " | New Version: " + ChatColor.GREEN + plugin.getUpdateInfo().getNewestVersion() + " (" + plugin.getUpdateInfo().getReleaseType() + ")" + ChatColor.GOLD + "\nDownload: http://dev.bukkit.org/bukkit-plugins/ctt/");
+            }
         }
     }
 }
