@@ -58,14 +58,12 @@ public class CTT extends JavaPlugin {
 
     public void onEnable() {
         if (new File("plugins/CaptureTheTower/config.yml").exists()) {
-            debug("Config found, copying any missing defaults");
             getConfig().addDefault("kits.Warrior", null);
             getConfig().addDefault("kits.Archer", null);
             getConfig().addDefault("kits.Runner", null);
             getConfig().options().copyDefaults(true);
             saveConfig();
         } else {
-            debug("Config not found, copying default config");
             saveDefaultConfig();
         }
         debug = shouldDebug();
