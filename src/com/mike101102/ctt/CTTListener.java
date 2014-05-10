@@ -44,14 +44,16 @@ public class CTTListener implements Listener {
     public void onPlayerDeath(EntityDamageEvent event) {
         if (event.getEntity() instanceof Player) {
             Player player = (Player) event.getEntity();
-            if ((player.getHealth() - event.getDamage()) > 0)
-                return;
             for (Entry<Integer, Game> en : GameAPIMain.getRunners().entrySet()) {
                 if (!(en.getValue() instanceof CTTGame))
                     continue;
                 CTTGame g = (CTTGame) en.getValue();
                 if (!g.getPlayers().contains(player.getName())) {
                     continue;
+                }
+                boolean lethal = true;
+                if ((player.getHealth() - event.getDamage()) > 0) {
+                    lethal = false;
                 }
                 int go = 0;
                 for (ItemStack i : player.getInventory().getContents()) {
@@ -66,19 +68,29 @@ public class CTTListener implements Listener {
                     EntityDamageByEntityEvent e = (EntityDamageByEntityEvent) event;
                     if (e.getDamager() instanceof Player) {
                         Player p = (Player) e.getDamager();
-                        if (go > 0) {
-                            p.getInventory().addItem(new ItemStack(Material.GOLD_BLOCK, go));
-                            j = false;
+                        if (!plugin.friendlyFire()) {
+                            if ((g.getBlueTeam().getPlayers().contains(player.getName()) && g.getBlueTeam().getPlayers().contains(p.getName())) || (g.getRedTeam().getPlayers().contains(player.getName()) && g.getRedTeam().getPlayers().contains(p.getName()))) {
+                                event.setCancelled(true);
+                                return;
+                            }
                         }
-                        PlayerStats s = plugin.getPlayerStats().get(p.getName());
-                        if (s != null) {
-                            s.setKills(s.getKills() + 1);
-                        } else {
-                            s = new PlayerStats(p.getName(), 0, 0, 1, 0);
+                        if (lethal) {
+                            if (go > 0) {
+                                p.getInventory().addItem(new ItemStack(Material.GOLD_BLOCK, go));
+                                j = false;
+                            }
+                            PlayerStats s = plugin.getPlayerStats().get(p.getName());
+                            if (s != null) {
+                                s.setKills(s.getKills() + 1);
+                            } else {
+                                s = new PlayerStats(p.getName(), 0, 0, 1, 0);
+                            }
+                            plugin.getPlayerStats().put(p.getName(), s);
                         }
-                        plugin.getPlayerStats().put(p.getName(), s);
                     }
                 }
+                if (!lethal)
+                    return;
                 if (j && go > 0) {
                     g.addBlocks(go);
                 }

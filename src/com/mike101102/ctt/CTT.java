@@ -40,6 +40,7 @@ public class CTT extends JavaPlugin {
     private DatabaseOptions dop;
     private static boolean debug;
     private boolean stats;
+    private boolean friendlyFire;
     private boolean newUpdate = false;
     private UpdateInfo updateInfo = null;
     private StatsUpdater su;
@@ -70,6 +71,7 @@ public class CTT extends JavaPlugin {
         stats = getConfig().getBoolean("enable-stats");
         String s = getConfig().getString("sql");
         okayIds = getOkayIdsFromConfig();
+        friendlyFire = getFriendlyFireFromConfig();
         debug("Loading kits");
         for (String i : getConfig().getConfigurationSection("kits").getKeys(false)) {
             List<ItemStack> t = new ArrayList<ItemStack>();
@@ -111,6 +113,7 @@ public class CTT extends JavaPlugin {
         debug("Setting up games...");
         int gamesSetup = 0;
         int spawnDelay = getSpawnDelayFromConfig();
+        boolean con = getContinuousGamesFromConfig();
         try {
             ResultSet r = sql.query("SELECT gameid FROM ctt");
             while (r.next()) {
@@ -132,7 +135,7 @@ public class CTT extends JavaPlugin {
                     Location bluegoal = new Location(getServer().getWorld(rs.getString("spawnworld")), rs.getDouble("gx1"), rs.getDouble("gy1"), rs.getDouble("gz1"));
                     Location redgoal = new Location(getServer().getWorld(rs.getString("spawnworld")), rs.getDouble("gx2"), rs.getDouble("gy2"), rs.getDouble("gz2"));
                     debug(gameid + "'s spawns and locations loaded");
-                    GameAPIMain.addRunner(new CTTGame(this, gameid, getMaxPlayers(), getTimeLimit(), spawnDelay, sign, spawns, bluegoal, redgoal));
+                    GameAPIMain.addRunner(new CTTGame(this, gameid, getMaxPlayers(), getTimeLimit(), spawnDelay, con, sign, spawns, bluegoal, redgoal));
                     debug("Game " + gameid + " setup successfully");
                     gamesSetup++;
                 } catch (SQLException e) {
@@ -255,6 +258,10 @@ public class CTT extends JavaPlugin {
         return spawnDelays;
     }
 
+    public boolean friendlyFire() {
+        return friendlyFire;
+    }
+
     public boolean stats() {
         return stats;
     }
@@ -273,6 +280,14 @@ public class CTT extends JavaPlugin {
 
     public int getSpawnDelayFromConfig() {
         return getConfig().getInt("spawn-delay");
+    }
+
+    public boolean getContinuousGamesFromConfig() {
+        return getConfig().getBoolean("continuous-games");
+    }
+
+    private boolean getFriendlyFireFromConfig() {
+        return getConfig().getBoolean("friendly-fire");
     }
 
     private boolean shouldDebug() {
@@ -641,7 +656,7 @@ public class CTT extends JavaPlugin {
                             ArrayList<Location> teamspawns = new ArrayList<Location>();
                             teamspawns.add(spawn1);
                             teamspawns.add(spawn2);
-                            CTTGame game = new CTTGame(this, id, getMaxPlayers(), getTimeLimit(), getSpawnDelayFromConfig(), null, teamspawns, goal1, goal2);
+                            CTTGame game = new CTTGame(this, id, getMaxPlayers(), getTimeLimit(), getSpawnDelayFromConfig(), getContinuousGamesFromConfig(), null, teamspawns, goal1, goal2);
                             GameAPIMain.addRunner(game);
                             debug("Game created and added to runner list");
                             try {

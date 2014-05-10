@@ -48,6 +48,7 @@ public class CTTGame extends Game {
     private String prefix = this.getName() + ChatColor.RESET;
     private boolean reset = false;
     private boolean lastKeepKits = false;
+    private boolean con;
 
     private final HashMap<String, PlayerData> pd = new HashMap<String, PlayerData>();
     private HashMap<String, Kit> lastKits = new HashMap<String, Kit>();
@@ -66,7 +67,7 @@ public class CTTGame extends Game {
     private Location rLoc3;
     private Location rLoc4;
 
-    public CTTGame(CTT plugin, int gameid, int maxPlayers, int timeLimit, int spawnDelay, Location signLoc, ArrayList<Location> teamspawns, Location blueGoal, Location redGoal) {
+    public CTTGame(CTT plugin, int gameid, int maxPlayers, int timeLimit, int spawnDelay, boolean con, Location signLoc, ArrayList<Location> teamspawns, Location blueGoal, Location redGoal) {
         super(plugin, gameid, maxPlayers, signLoc, ChatColor.GREEN + "[CTT]", GameStage.Waiting, teamspawns, 20L, 20L);
         this.plugin = plugin;
         sql = plugin.getSQL();
@@ -86,6 +87,7 @@ public class CTTGame extends Game {
         rLoc4 = new Location(rLoc1.getWorld(), rLoc3.getX(), rLoc3.getY() + 1, rLoc3.getZ());
         this.timeLimit = timeLimit;
         this.spawnDelay = spawnDelay;
+        this.con = con;
         resetGoalBlocks();
         for (Entry<String, Kit> en : plugin.getKits().entrySet()) {
             if (en.getValue().getPermission().equalsIgnoreCase("ctt.kit")) {
@@ -535,15 +537,17 @@ public class CTTGame extends Game {
         }
         @SuppressWarnings("unchecked")
         ArrayList<String> list = (ArrayList<String>) this.getPlayers().clone();
-        if (message)
+        if (message && con)
             sendGameMessage(ChatColor.AQUA.toString() + ChatColor.MAGIC + "|" + ChatColor.AQUA + "Resetting game for a new round" + ChatColor.MAGIC + "|");
         for (String i : list) {
             removePlayer(Bukkit.getPlayer(i));
         }
-        debug("Shuffling teams..");
-        Collections.shuffle(list);
-        for (String i : list) {
-            addPlayer(Bukkit.getPlayer(i));
+        if (con) {
+            debug("Shuffling teams..");
+            Collections.shuffle(list);
+            for (String i : list) {
+                addPlayer(Bukkit.getPlayer(i));
+            }
         }
         reset = false;
         lastKeepKits = false;
