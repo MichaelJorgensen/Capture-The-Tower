@@ -11,9 +11,11 @@ import java.util.List;
 import java.util.Map.Entry;
 import java.util.Random;
 
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.World;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -45,6 +47,7 @@ public class CTT extends JavaPlugin {
     private UpdateInfo updateInfo = null;
     private StatsUpdater su;
     private ArrayList<Integer> okayIds;
+    private Location dump;
 
     public HashMap<String, Integer> creating_game_ids = new HashMap<String, Integer>();
     public HashMap<String, Location> creating_spawns_ids = new HashMap<String, Location>();
@@ -72,6 +75,23 @@ public class CTT extends JavaPlugin {
         String s = getConfig().getString("sql");
         okayIds = getOkayIdsFromConfig();
         friendlyFire = getFriendlyFireFromConfig();
+        debug("Finding dump location");
+        if (getConfig().get("dump.x") != null) {
+            debug("Player dump location found in config");
+            double x = getConfig().getDouble("dump.x");
+            double y = getConfig().getDouble("dump.y");
+            double z = getConfig().getDouble("dump.z");
+            float pitch = Float.valueOf(getConfig().getString("dump.pitch"));
+            float yaw = Float.valueOf(getConfig().getString("dump.yaw"));
+            World world = Bukkit.getWorld(getConfig().getString("dump.world"));
+            if (world != null) {
+                dump = new Location(world, x, y, z, yaw, pitch);
+            } else {
+                dump = Bukkit.getWorlds().get(0).getSpawnLocation();
+            }
+        } else {
+            dump = Bukkit.getWorlds().get(0).getSpawnLocation();
+        }
         debug("Loading kits");
         for (String i : getConfig().getConfigurationSection("kits").getKeys(false)) {
             List<ItemStack> t = new ArrayList<ItemStack>();
@@ -270,6 +290,10 @@ public class CTT extends JavaPlugin {
         return sql;
     }
 
+    public Location getDump() {
+        return dump;
+    }
+
     public int getTimeLimit() {
         return getConfig().getInt("time-limit");
     }
@@ -369,6 +393,18 @@ public class CTT extends JavaPlugin {
         }
     }
 
+    public void updateDumpInConfig() {
+        FileConfiguration c = getConfig();
+        c.set("dump.x", dump.getX());
+        c.set("dump.y", dump.getY());
+        c.set("dump.z", dump.getZ());
+        c.set("dump.pitch", dump.getPitch());
+        c.set("dump.yaw", dump.getYaw());
+        c.set("dump.world", dump.getWorld().getName());
+        saveConfig();
+        debug("Dump location updated in the config");
+    }
+
     public void help(CommandSender s) {
         s.sendMessage(ChatColor.RED + "CTT Commands You Can Use");
         if (s.hasPermission("ctt.create")) {
@@ -388,6 +424,9 @@ public class CTT extends JavaPlugin {
         if (s.hasPermission("ctt.kit")) {
             s.sendMessage(ChatColor.GOLD + "/ctt kit [name]");
             s.sendMessage(ChatColor.GOLD + "/ctt kits");
+        }
+        if (s.hasPermission("ctt.dump")) {
+            s.sendMessage(ChatColor.GOLD + "/ctt setdump");
         }
         if (s.hasPermission("ctt.join")) {
             s.sendMessage(ChatColor.GOLD + "/join [id]");
@@ -908,6 +947,25 @@ public class CTT extends JavaPlugin {
         else if (args[0].equalsIgnoreCase("version")) {
             sender.sendMessage(getDescription().getFullName());
             return true;
+        }
+
+        else if (args[0].equalsIgnoreCase("setdump")) {
+            if (sender.hasPermission("ctt.dump")) {
+                if (sender instanceof Player) {
+                    Player player = (Player) sender;
+                    debug("New dump location");
+                    dump = player.getLocation();
+                    player.sendMessage(ChatColor.GREEN + "Dump location for players leaving the game set to your position");
+                    updateDumpInConfig();
+                    return true;
+                } else {
+                    sender.sendMessage(ChatColor.RED + "You must be a player to set the dump location");
+                    return true;
+                }
+            } else {
+                sender.sendMessage(ChatColor.RED + "You do not have permission (ctt.dump)");
+                return true;
+            }
         }
         help(sender);
         return true;

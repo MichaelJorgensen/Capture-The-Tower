@@ -182,6 +182,10 @@ public class CTTListener implements Listener {
                         event.setCancelled(true);
                         event.getPlayer().updateInventory();
                     }
+                    if (a.getType() == Material.GOLD_BLOCK && event.getBlock().getType() != Material.GOLD_BLOCK) {
+                        event.setCancelled(true);
+                        event.getPlayer().updateInventory();
+                    }
                 }
             }
         }

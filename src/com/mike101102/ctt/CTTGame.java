@@ -162,7 +162,7 @@ public class CTTGame extends Game {
         }
         player.updateInventory();
         pd.remove(player.getName());
-        player.teleport(player.getWorld().getSpawnLocation());
+        player.teleport(plugin.getDump());
         if (!reset) {
             sendGameMessage(player.getDisplayName() + ChatColor.RED + " has left the game");
         }
