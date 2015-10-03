@@ -36,6 +36,7 @@ permissions:
             ctt.info: true
             ctt.stats: true
             ctt.kit: true
+            ctt.update: true
             ctt.dump: true
     ctt.create:
         description: Allows you to create new games
