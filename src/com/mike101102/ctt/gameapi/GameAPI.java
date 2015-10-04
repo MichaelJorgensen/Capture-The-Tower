@@ -1,6 +1,7 @@
 package com.mike101102.ctt.gameapi;
 
 import java.util.ArrayList;
+import java.util.UUID;
 
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
@@ -73,15 +74,6 @@ public interface GameAPI {
     public ArrayList<Location> getTeamSpawns();
 
     /**
-     * Gets the list of queued players
-     * 
-     * @deprecated Currently the GameAPI does nothing but store queued players
-     * @return ArrayList<String>
-     */
-    @Deprecated
-    public ArrayList<String> getQueuedPlayers();
-
-    /**
      * Gets the maximum amount of players
      * 
      * @return int max players
@@ -120,9 +112,9 @@ public interface GameAPI {
     /**
      * Gets the list of players
      * 
-     * @return ArrayList<String>
+     * @return ArrayList<UUID>
      */
-    public ArrayList<String> getPlayers();
+    public ArrayList<UUID> getPlayers();
 
     /**
      * Sets the game signs location

@@ -1,8 +1,10 @@
 package com.mike101102.ctt;
 
+import java.util.UUID;
+
 public class PlayerStats {
 
-    private String name;
+    private UUID id;
     private int wins;
     private int losses;
     private int kills;
@@ -11,14 +13,14 @@ public class PlayerStats {
     /**
      * Only provide what has changed, everything else set to 0 for no change
      * 
-     * @param name
+     * @param id
      * @param wins
      * @param losses
      * @param kills
      * @param deaths
      */
-    public PlayerStats(String name, int wins, int losses, int kills, int deaths) {
-        this.name = name;
+    public PlayerStats(UUID id, int wins, int losses, int kills, int deaths) {
+        this.id = id;
         this.wins = wins;
         this.losses = losses;
         this.kills = kills;
@@ -36,15 +38,15 @@ public class PlayerStats {
             return false;
         }
         PlayerStats s = (PlayerStats) o;
-        if (s.getName().equalsIgnoreCase(name) && s.getWins() == wins && s.getLosses() == losses && s.getKills() == kills && s.getDeaths() == deaths) {
+        if (s.getUniqueId().equals(id) && s.getWins() == wins && s.getLosses() == losses && s.getKills() == kills && s.getDeaths() == deaths) {
             return true;
         } else {
             return false;
         }
     }
 
-    public String getName() {
-        return name;
+    public UUID getUniqueId() {
+        return id;
     }
 
     public int getWins() {

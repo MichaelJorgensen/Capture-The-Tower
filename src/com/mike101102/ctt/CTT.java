@@ -10,6 +10,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Random;
+import java.util.UUID;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -54,11 +55,12 @@ public class CTT extends JavaPlugin {
     public HashMap<String, Location> creating_spawns2_ids = new HashMap<String, Location>();
     public HashMap<String, Location> creating_goals_ids = new HashMap<String, Location>();
 
-    private final HashMap<String, PlayerStats> playerStats = new HashMap<String, PlayerStats>();
+    private final HashMap<UUID, PlayerStats> playerStats = new HashMap<UUID, PlayerStats>();
+    private final HashMap<UUID, String> playerStatNames = new HashMap<UUID, String>();
     private final HashMap<String, Kit> kits = new HashMap<String, Kit>();
-    private final HashMap<String, Integer> spawnDelays = new HashMap<String, Integer>();
-    private final LinkedHashMap<String, Top> topWins = new LinkedHashMap<String, Top>();
-    private final LinkedHashMap<String, Top> topKills = new LinkedHashMap<String, Top>();
+    private final HashMap<UUID, Integer> spawnDelays = new HashMap<UUID, Integer>();
+    private final LinkedHashMap<UUID, Top> topWins = new LinkedHashMap<UUID, Top>();
+    private final LinkedHashMap<UUID, Top> topKills = new LinkedHashMap<UUID, Top>();
 
     public void onEnable() {
         if (new File("plugins/CaptureTheTower/config.yml").exists()) {
@@ -262,11 +264,11 @@ public class CTT extends JavaPlugin {
             send("[Debug] " + message);
     }
 
-    public LinkedHashMap<String, Top> getTopWins() {
+    public LinkedHashMap<UUID, Top> getTopWins() {
         return topWins;
     }
 
-    public LinkedHashMap<String, Top> getTopKills() {
+    public LinkedHashMap<UUID, Top> getTopKills() {
         return topKills;
     }
 
@@ -274,7 +276,7 @@ public class CTT extends JavaPlugin {
         return okayIds;
     }
 
-    public HashMap<String, Integer> getSpawnDelays() {
+    public HashMap<UUID, Integer> getSpawnDelays() {
         return spawnDelays;
     }
 
@@ -326,8 +328,12 @@ public class CTT extends JavaPlugin {
         return debug;
     }
 
-    public HashMap<String, PlayerStats> getPlayerStats() {
+    public HashMap<UUID, PlayerStats> getPlayerStats() {
         return playerStats;
+    }
+
+    public HashMap<UUID, String> getPlayerStatNames() {
+        return playerStatNames;
     }
 
     public String getKillMessage() {
@@ -454,11 +460,11 @@ public class CTT extends JavaPlugin {
                         if (GameAPIMain.getRunners().containsKey(i)) {
                             Game game = GameAPIMain.getRunners().get(i);
                             for (Entry<Integer, Game> en : GameAPIMain.getRunners().entrySet()) {
-                                if (game.getPlayers().contains(player.getName())) {
+                                if (game.getPlayers().contains(player.getUniqueId())) {
                                     player.sendMessage(ChatColor.RED + "You are already in that game!");
                                     return true;
                                 }
-                                if (en.getValue().getPlayers().contains(player.getName())) {
+                                if (en.getValue().getPlayers().contains(player.getUniqueId())) {
                                     player.sendMessage(ChatColor.RED + "You are already in game " + en.getValue().getGameId() + "!");
                                     return true;
                                 }
@@ -488,7 +494,7 @@ public class CTT extends JavaPlugin {
                             g = en.getValue();
                         }
                     }
-                    if (i == 1 && !g.getPlayers().contains(player.getName())) {
+                    if (i == 1 && !g.getPlayers().contains(player.getUniqueId())) {
                         if (!EventHandle.callPlayerJoinGameEvent(g, player).isCancelled()) {
                             g.addPlayer(player);
                             return true;
@@ -507,7 +513,7 @@ public class CTT extends JavaPlugin {
             if (sender instanceof Player) {
                 Player player = (Player) sender;
                 for (Entry<Integer, Game> en : GameAPIMain.getRunners().entrySet()) {
-                    if (en.getValue().getPlayers().contains(player.getName())) {
+                    if (en.getValue().getPlayers().contains(player.getUniqueId())) {
                         if (!EventHandle.callPlayerLeaveGameEvent(en.getValue(), player).isCancelled()) {
                             en.getValue().removePlayer(player);
                         }
@@ -820,9 +826,9 @@ public class CTT extends JavaPlugin {
                 StringBuilder sb = new StringBuilder();
                 sb.append(ChatColor.GOLD + "Top Wins: " + ChatColor.GREEN);
                 int cap = 0;
-                for (Entry<String, Top> en : topWins.entrySet()) {
+                for (Entry<UUID, Top> en : topWins.entrySet()) {
                     if (cap < 10) {
-                        sb.append(ChatColor.RED.toString() + (cap + 1) + ". " + ChatColor.GREEN + en.getKey() + " (" + en.getValue().getValue() + "), ");
+                        sb.append(ChatColor.RED.toString() + (cap + 1) + ". " + ChatColor.GREEN + playerStatNames.get(en.getKey()) + " (" + en.getValue().getValue() + "), ");
                     } else {
                         break;
                     }
@@ -833,9 +839,9 @@ public class CTT extends JavaPlugin {
                 sb.append("\n");
                 sb.append(ChatColor.GOLD + "Top Kills: " + ChatColor.GREEN);
                 cap = 0;
-                for (Entry<String, Top> en : topKills.entrySet()) {
+                for (Entry<UUID, Top> en : topKills.entrySet()) {
                     if (cap < 10) {
-                        sb.append(ChatColor.RED.toString() + (cap + 1) + ". " + ChatColor.GREEN + en.getKey() + " (" + en.getValue().getValue() + "), ");
+                        sb.append(ChatColor.RED.toString() + (cap + 1) + ". " + ChatColor.GREEN + playerStatNames.get(en.getKey()) + " (" + en.getValue().getValue() + "), ");
                     } else {
                         break;
                     }
@@ -852,38 +858,36 @@ public class CTT extends JavaPlugin {
         }
 
         else if (args[0].equalsIgnoreCase("stats")) {
-            if (sender.hasPermission("ctt.stats")) {
-                PlayerStats s = null;
-                if (args.length == 1) {
-                    s = playerStats.get(sender.getName());
-                } else if (args.length == 2) {
-                    s = playerStats.get(args[1]);
+            if (sender instanceof Player) {
+                if (sender.hasPermission("ctt.stats")) {
+                    Player p = (Player) sender;
+                    PlayerStats s = playerStats.get(p.getUniqueId());
+                    if (s == null) {
+                        sender.sendMessage(ChatColor.RED + "You don't have any stats yet. Play some games first!");
+                        return true;
+                    }
+                    StringBuilder sb = new StringBuilder();
+                    sb.append(ChatColor.GREEN + "Stats for " + ChatColor.RED + playerStatNames.get(s.getUniqueId()) + "\n");
+                    if (topWins.containsKey(s.getUniqueId())) {
+                        sb.append(ChatColor.GREEN + "Wins: " + ChatColor.GOLD + s.getWins() + ChatColor.RED + " (Rank " + ChatColor.GOLD + topWins.get(s.getUniqueId()).getRank() + ChatColor.RED + ")\n");
+                    } else {
+                        sb.append(ChatColor.GREEN + "Wins: " + ChatColor.GOLD + s.getWins() + "\n");
+                    }
+                    sb.append(ChatColor.GREEN + "Losses: " + s.getLosses() + "\n");
+                    if (topKills.containsKey(s.getUniqueId())) {
+                        sb.append(ChatColor.GREEN + "Kills: " + ChatColor.GOLD + s.getKills() + ChatColor.RED + " (Rank " + ChatColor.GOLD + topKills.get(s.getUniqueId()).getRank() + ChatColor.RED + ")\n");
+                    } else {
+                        sb.append(ChatColor.GREEN + "Kills: " + ChatColor.GOLD + s.getKills());
+                    }
+                    sb.append(ChatColor.GREEN + "Deaths: " + ChatColor.GOLD + s.getDeaths());
+                    sender.sendMessage(sb.toString());
+                    return true;
                 } else {
-                    sender.sendMessage(ChatColor.GOLD + "/ctt stats (name)");
+                    sender.sendMessage(ChatColor.RED + "You do not have permission (ctt.stats)");
                     return true;
                 }
-                if (s == null) {
-                    sender.sendMessage(ChatColor.RED + "You don't have any stats yet. Play some games first!");
-                    return true;
-                }
-                StringBuilder sb = new StringBuilder();
-                sb.append(ChatColor.GREEN + "Stats for " + ChatColor.RED + s.getName() + "\n");
-                if (topWins.containsKey(s.getName())) {
-                    sb.append(ChatColor.GREEN + "Wins: " + ChatColor.GOLD + s.getWins() + ChatColor.RED + " (Rank " + ChatColor.GOLD + topWins.get(s.getName()).getRank() + ChatColor.RED + ")\n");
-                } else {
-                    sb.append(ChatColor.GREEN + "Wins: " + ChatColor.GOLD + s.getWins() + "\n");
-                }
-                sb.append(ChatColor.GREEN + "Losses: " + s.getLosses() + "\n");
-                if (topKills.containsKey(s.getName())) {
-                    sb.append(ChatColor.GREEN + "Kills: " + ChatColor.GOLD + s.getKills() + ChatColor.RED + " (Rank " + ChatColor.GOLD + topKills.get(s.getName()).getRank() + ChatColor.RED + ")\n");
-                } else {
-                    sb.append(ChatColor.GREEN + "Kills: " + ChatColor.GOLD + s.getKills());
-                }
-                sb.append(ChatColor.GREEN + "Deaths: " + ChatColor.GOLD + s.getDeaths());
-                sender.sendMessage(sb.toString());
-                return true;
             } else {
-                sender.sendMessage(ChatColor.RED + "You do not have permission (ctt.stats)");
+                sender.sendMessage(ChatColor.RED + "You must be a player!");
                 return true;
             }
         }
@@ -898,7 +902,7 @@ public class CTT extends JavaPlugin {
                             if (player.hasPermission(i.getPermission())) {
                                 for (Entry<Integer, Game> en : GameAPIMain.getRunners().entrySet()) {
                                     if (en.getValue() instanceof CTTGame) {
-                                        if (en.getValue().getPlayers().contains(player.getName())) {
+                                        if (en.getValue().getPlayers().contains(player.getUniqueId())) {
                                             CTTGame g = (CTTGame) en.getValue();
                                             g.resetPlayerInventory(player, i);
                                             player.sendMessage(ChatColor.GOLD + i.getName() + ChatColor.GREEN + " has been selected");

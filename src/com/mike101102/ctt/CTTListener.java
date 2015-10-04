@@ -48,7 +48,7 @@ public class CTTListener implements Listener {
                 if (!(en.getValue() instanceof CTTGame))
                     continue;
                 CTTGame g = (CTTGame) en.getValue();
-                if (!g.getPlayers().contains(player.getName())) {
+                if (!g.getPlayers().contains(player.getUniqueId())) {
                     continue;
                 }
                 boolean lethal = true;
@@ -69,7 +69,7 @@ public class CTTListener implements Listener {
                     if (e.getDamager() instanceof Player) {
                         Player p = (Player) e.getDamager();
                         if (!plugin.friendlyFire()) {
-                            if ((g.getBlueTeam().getPlayers().contains(player.getName()) && g.getBlueTeam().getPlayers().contains(p.getName())) || (g.getRedTeam().getPlayers().contains(player.getName()) && g.getRedTeam().getPlayers().contains(p.getName()))) {
+                            if ((g.getBlueTeam().getPlayers().contains(player.getUniqueId()) && g.getBlueTeam().getPlayers().contains(p.getUniqueId())) || (g.getRedTeam().getPlayers().contains(player.getUniqueId()) && g.getRedTeam().getPlayers().contains(p.getUniqueId()))) {
                                 event.setCancelled(true);
                                 return;
                             }
@@ -79,13 +79,13 @@ public class CTTListener implements Listener {
                                 p.getInventory().addItem(new ItemStack(Material.GOLD_BLOCK, go));
                                 j = false;
                             }
-                            PlayerStats s = plugin.getPlayerStats().get(p.getName());
+                            PlayerStats s = plugin.getPlayerStats().get(p.getUniqueId());
                             if (s != null) {
                                 s.setKills(s.getKills() + 1);
                             } else {
-                                s = new PlayerStats(p.getName(), 0, 0, 1, 0);
+                                s = new PlayerStats(p.getUniqueId(), 0, 0, 1, 0);
                             }
-                            plugin.getPlayerStats().put(p.getName(), s);
+                            plugin.getPlayerStats().put(p.getUniqueId(), s);
                         }
                     }
                 }
@@ -94,16 +94,16 @@ public class CTTListener implements Listener {
                 if (j && go > 0) {
                     g.addBlocks(go);
                 }
-                PlayerStats s = plugin.getPlayerStats().get(player.getName());
+                PlayerStats s = plugin.getPlayerStats().get(player.getUniqueId());
                 if (s != null) {
                     s.setDeaths(s.getDeaths() + 1);
                 } else {
-                    s = new PlayerStats(player.getName(), 0, 0, 0, 1);
+                    s = new PlayerStats(player.getUniqueId(), 0, 0, 0, 1);
                 }
-                plugin.getPlayerStats().put(player.getName(), s);
-                g.resetPlayerInventory(player, g.getPlayerData().get(player.getName()).getKit());
-                if (g.getPlayers().contains(player.getName())) {
-                    if (g.getBlueTeam().getPlayers().contains(player.getName())) {
+                plugin.getPlayerStats().put(player.getUniqueId(), s);
+                g.resetPlayerInventory(player, g.getPlayerData().get(player.getUniqueId()).getKit());
+                if (g.getPlayers().contains(player.getUniqueId())) {
+                    if (g.getBlueTeam().getPlayers().contains(player.getUniqueId())) {
                         player.teleport(g.getTeamSpawns().get(0));
                     } else {
                         player.teleport(g.getTeamSpawns().get(1));
@@ -123,7 +123,7 @@ public class CTTListener implements Listener {
                         g.sendGameMessage(player.getDisplayName() + ChatColor.GOLD + " has died");
                     }
                     if (g.getSpawnDelay() > 0) {
-                        plugin.getSpawnDelays().put(player.getName(), g.getSpawnDelay());
+                        plugin.getSpawnDelays().put(player.getUniqueId(), g.getSpawnDelay());
                         player.sendMessage(ChatColor.RED + "Spawn delay: " + ChatColor.GOLD + g.getSpawnDelay() + ChatColor.RED + " more seconds");
                     }
                     CTT.debug(player.getName() + " has been killed, player reset complete");
@@ -145,7 +145,7 @@ public class CTTListener implements Listener {
                 if (!(en.getValue() instanceof CTTGame))
                     continue;
                 CTTGame g = (CTTGame) en.getValue();
-                if (g.getPlayers().contains(player.getName())) {
+                if (g.getPlayers().contains(player.getUniqueId())) {
                     player.sendMessage(ChatColor.RED + "You can't use commands while in game! To leave, use /l");
                     event.setCancelled(true);
                     CTT.debug(player.getName() + " has been denied the use of the command: " + event.getMessage());
@@ -159,7 +159,7 @@ public class CTTListener implements Listener {
     public void onBlockDestroy(BlockBreakEvent event) {
         for (Entry<Integer, Game> en : GameAPIMain.getRunners().entrySet()) {
             if (en.getValue() instanceof CTTGame) {
-                if (en.getValue().getPlayers().contains(event.getPlayer().getName())) {
+                if (en.getValue().getPlayers().contains(event.getPlayer().getUniqueId())) {
                     if (event.getBlock().getType() != Material.GOLD_BLOCK) {
                         event.setCancelled(true);
                     } else {
@@ -176,7 +176,7 @@ public class CTTListener implements Listener {
     public void onBlockPlace(BlockPlaceEvent event) {
         for (Entry<Integer, Game> en : GameAPIMain.getRunners().entrySet()) {
             if (en.getValue() instanceof CTTGame) {
-                if (en.getValue().getPlayers().contains(event.getPlayer().getName())) {
+                if (en.getValue().getPlayers().contains(event.getPlayer().getUniqueId())) {
                     Block a = event.getBlockAgainst();
                     if (!plugin.getOkayIds().contains(a.getTypeId()) && a.getType() != Material.GOLD_BLOCK) {
                         event.setCancelled(true);
@@ -203,7 +203,7 @@ public class CTTListener implements Listener {
     public void onPlayerDrop(PlayerDropItemEvent event) {
         for (Entry<Integer, Game> en : GameAPIMain.getRunners().entrySet()) {
             if (en.getValue() instanceof CTTGame) {
-                if (en.getValue().getPlayers().contains(event.getPlayer().getName())) {
+                if (en.getValue().getPlayers().contains(event.getPlayer().getUniqueId())) {
                     event.setCancelled(true);
                 }
             }
@@ -224,8 +224,8 @@ public class CTTListener implements Listener {
     @EventHandler
     public void onPlayerMove(PlayerMoveEvent event) {
         Player player = event.getPlayer();
-        if (plugin.getSpawnDelays().containsKey(player.getName())) {
-            if (plugin.getSpawnDelays().get(player.getName()) == plugin.getSpawnDelayFromConfig()) {
+        if (plugin.getSpawnDelays().containsKey(player.getUniqueId())) {
+            if (plugin.getSpawnDelays().get(player.getUniqueId()) == plugin.getSpawnDelayFromConfig()) {
                 return;
             }
             event.setCancelled(true);

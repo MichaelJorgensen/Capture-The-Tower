@@ -1,6 +1,7 @@
 package com.mike101102.ctt.gameapi;
 
 import java.util.ArrayList;
+import java.util.UUID;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -31,8 +32,7 @@ public abstract class Game extends BukkitRunnable implements GameAPI {
     private GameStage gamestage;
     private GameStage defaultStage;
 
-    private final ArrayList<String> playerlist = new ArrayList<String>();
-    private ArrayList<String> queuedplayers = new ArrayList<String>();
+    private final ArrayList<UUID> playerlist = new ArrayList<UUID>();
     private ArrayList<Location> teamspawns;
 
     /**
@@ -187,10 +187,6 @@ public abstract class Game extends BukkitRunnable implements GameAPI {
         return teamspawns;
     }
 
-    public ArrayList<String> getQueuedPlayers() {
-        return queuedplayers;
-    }
-
     public int getMaxPlayers() {
         return maxPlayers;
     }
@@ -215,7 +211,7 @@ public abstract class Game extends BukkitRunnable implements GameAPI {
         return gameName;
     }
 
-    public ArrayList<String> getPlayers() {
+    public ArrayList<UUID> getPlayers() {
         return playerlist;
     }
 
@@ -245,7 +241,7 @@ public abstract class Game extends BukkitRunnable implements GameAPI {
     }
 
     public void sendGameMessage(String message) {
-        for (String i : getPlayers()) {
+        for (UUID i : getPlayers()) {
             Player p = Bukkit.getPlayer(i);
             if (p == null)
                 continue;
@@ -254,7 +250,7 @@ public abstract class Game extends BukkitRunnable implements GameAPI {
     }
 
     public void sendTeamMessage(GameTeam team, String message) {
-        for (String i : team.getPlayers()) {
+        for (UUID i : team.getPlayers()) {
             Player p = Bukkit.getPlayer(i);
             if (p == null)
                 continue;

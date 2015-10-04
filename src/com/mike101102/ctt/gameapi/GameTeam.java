@@ -1,11 +1,12 @@
 package com.mike101102.ctt.gameapi;
 
 import java.util.ArrayList;
+import java.util.UUID;
 
 public class GameTeam {
 
     private String name;
-    private final ArrayList<String> teamPlayers = new ArrayList<String>();
+    private final ArrayList<UUID> teamPlayers = new ArrayList<UUID>();
 
     /**
      * Represents a Game Team, the player list will be created (not null) and
@@ -29,9 +30,9 @@ public class GameTeam {
     /**
      * Returns the list of the player names on this team
      * 
-     * @return ArrayList<String>
+     * @return ArrayList<UUID>
      */
-    public ArrayList<String> getPlayers() {
+    public ArrayList<UUID> getPlayers() {
         return teamPlayers;
     }
 
@@ -40,7 +41,7 @@ public class GameTeam {
      * 
      * @param player name that should be added
      */
-    public void addPlayerToList(String player) {
+    public void addPlayerToList(UUID player) {
         this.teamPlayers.add(player);
     }
 

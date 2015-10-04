@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Random;
+import java.util.UUID;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -50,8 +51,8 @@ public class CTTGame extends Game {
     private boolean lastKeepKits = false;
     private boolean con;
 
-    private final HashMap<String, PlayerData> pd = new HashMap<String, PlayerData>();
-    private HashMap<String, Kit> lastKits = new HashMap<String, Kit>();
+    private final HashMap<UUID, PlayerData> pd = new HashMap<UUID, PlayerData>();
+    private HashMap<UUID, Kit> lastKits = new HashMap<UUID, Kit>();
     private final List<Kit> dK = new ArrayList<Kit>();
 
     private CTTTeam b = new CTTTeam(ChatColor.BLUE + "Blue Team");
@@ -103,7 +104,7 @@ public class CTTGame extends Game {
 
     @Override
     public void addPlayer(Player player) {
-        debug("Attempting to add player " + player.getName());
+        debug("Attempting to add player " + player.getName() + ", UUID: " + player.getUniqueId());
         if (getPlayers().size() >= getMaxPlayers()) {
             player.sendMessage(prefix + "This game is full");
             debug("Game is full, player denied");
@@ -113,22 +114,22 @@ public class CTTGame extends Game {
         player.setFireTicks(0);
         player.setFlying(false);
         player.setFoodLevel(20);
-        getPlayers().add(player.getName());
+        getPlayers().add(player.getUniqueId());
         if (lastKeepKits) {
-            pd.put(player.getName(), new PlayerData(player, lastKits.get(player.getName())));
+            pd.put(player.getUniqueId(), new PlayerData(player, lastKits.get(player.getUniqueId())));
         } else {
-            pd.put(player.getName(), new PlayerData(player, getKit(player.getName())));
+            pd.put(player.getUniqueId(), new PlayerData(player, getKit(player.getUniqueId())));
         }
         if (b.getPlayers().size() > r.getPlayers().size()) {
-            r.getPlayers().add(player.getName());
-            resetPlayerInventory(player, pd.get(player.getName()).getKit());
+            r.getPlayers().add(player.getUniqueId());
+            resetPlayerInventory(player, pd.get(player.getUniqueId()).getKit());
             player.teleport(this.getTeamSpawns().get(1));
             if (!reset) {
                 sendGameMessage(player.getDisplayName() + ChatColor.GOLD + " has joined the " + r.getName() + ChatColor.GOLD + "!");
             }
         } else {
-            b.getPlayers().add(player.getName());
-            resetPlayerInventory(player, pd.get(player.getName()).getKit());
+            b.getPlayers().add(player.getUniqueId());
+            resetPlayerInventory(player, pd.get(player.getUniqueId()).getKit());
             player.teleport(this.getTeamSpawns().get(0));
             if (!reset) {
                 sendGameMessage(player.getDisplayName() + ChatColor.GOLD + " has joined the " + b.getName() + ChatColor.GOLD + "!");
@@ -139,7 +140,7 @@ public class CTTGame extends Game {
 
     @Override
     public void removePlayer(Player player) {
-        debug("Attempting to remove player " + player.getName());
+        debug("Attempting to remove player " + player.getName() + ", UUID: " + player.getUniqueId());
         int go = 0;
         for (ItemStack i : player.getInventory().getContents()) {
             if (i == null)
@@ -151,26 +152,26 @@ public class CTTGame extends Game {
         if (go > 0) {
             addBlocks(go);
         }
-        plugin.getSpawnDelays().remove(player.getName());
+        plugin.getSpawnDelays().remove(player.getUniqueId());
         player.setScoreboard(Bukkit.getScoreboardManager().getNewScoreboard());
         player.getInventory().clear();
-        player.getInventory().setContents(pd.get(player.getName()).getPlayerInventory());
-        player.getInventory().setArmorContents(pd.get(player.getName()).getPlayerArmor());
-        GameMode m = pd.get(player.getName()).getPlayerGameMode();
+        player.getInventory().setContents(pd.get(player.getUniqueId()).getPlayerInventory());
+        player.getInventory().setArmorContents(pd.get(player.getUniqueId()).getPlayerArmor());
+        GameMode m = pd.get(player.getUniqueId()).getPlayerGameMode();
         if (player.getGameMode() != m) {
             player.setGameMode(m);
         }
         player.updateInventory();
-        pd.remove(player.getName());
+        pd.remove(player.getUniqueId());
         player.teleport(plugin.getDump());
         if (!reset) {
             sendGameMessage(player.getDisplayName() + ChatColor.RED + " has left the game");
         }
-        getPlayers().remove(player.getName());
-        if (b.getPlayers().contains(player.getName())) {
-            b.getPlayers().remove(player.getName());
+        getPlayers().remove(player.getUniqueId());
+        if (b.getPlayers().contains(player.getUniqueId())) {
+            b.getPlayers().remove(player.getUniqueId());
         } else {
-            r.getPlayers().remove(player.getName());
+            r.getPlayers().remove(player.getUniqueId());
         }
         debug(player.getName() + " has been removed successfully from the game");
     }
@@ -264,7 +265,7 @@ public class CTTGame extends Game {
         }
         blueScore.setScore(b.getBlocks());
         redScore.setScore(r.getBlocks());
-        for (String i : getPlayers()) {
+        for (UUID i : getPlayers()) {
             Player p = Bukkit.getPlayer(i);
             if (p == null) {
                 continue;
@@ -280,21 +281,21 @@ public class CTTGame extends Game {
             this.sendGameMessage(ChatColor.RED.toString() + left);
         }
 
-        ArrayList<String> keysToRemove = new ArrayList<String>();
-        for (Entry<String, Integer> en : plugin.getSpawnDelays().entrySet()) {
+        ArrayList<UUID> keysToRemove = new ArrayList<UUID>();
+        for (Entry<UUID, Integer> en : plugin.getSpawnDelays().entrySet()) {
             if (getPlayers().contains(en.getKey())) {
                 plugin.getSpawnDelays().put(en.getKey(), en.getValue() - 1);
                 Player p = Bukkit.getPlayer(en.getKey());
                 int delay = en.getValue();
                 if (delay > 0) {
-                    p.sendMessage(ChatColor.RED + "Spawn delay: " + ChatColor.GOLD + plugin.getSpawnDelays().get(p.getName()) + ChatColor.RED + " more seconds");
+                    p.sendMessage(ChatColor.RED + "Spawn delay: " + ChatColor.GOLD + plugin.getSpawnDelays().get(p.getUniqueId()) + ChatColor.RED + " more seconds");
                 }
                 if (delay < 1) {
                     keysToRemove.add(en.getKey());
                 }
             }
         }
-        for (String i : keysToRemove) {
+        for (UUID i : keysToRemove) {
             debug("Removing " + i + " from spawn delay list");
             plugin.getSpawnDelays().remove(i);
         }
@@ -331,45 +332,45 @@ public class CTTGame extends Game {
     }
 
     private void blueTeamWin() {
-        for (String n : this.getPlayers()) {
-            if (this.getBlueTeam().getPlayers().contains(n)) {
-                PlayerStats s = plugin.getPlayerStats().get(n);
+        for (UUID u : this.getPlayers()) {
+            if (this.getBlueTeam().getPlayers().contains(u)) {
+                PlayerStats s = plugin.getPlayerStats().get(u);
                 if (s != null) {
                     s.setWins(s.getWins() + 1);
                 } else {
-                    s = new PlayerStats(n, 1, 0, 0, 0);
+                    s = new PlayerStats(u, 1, 0, 0, 0);
                 }
-                plugin.getPlayerStats().put(n, s);
+                plugin.getPlayerStats().put(u, s);
             } else {
-                PlayerStats s = plugin.getPlayerStats().get(n);
+                PlayerStats s = plugin.getPlayerStats().get(u);
                 if (s != null) {
                     s.setLosses(s.getLosses() + 1);
                 } else {
-                    s = new PlayerStats(n, 0, 1, 0, 0);
+                    s = new PlayerStats(u, 0, 1, 0, 0);
                 }
-                plugin.getPlayerStats().put(n, s);
+                plugin.getPlayerStats().put(u, s);
             }
         }
     }
 
     private void redTeamWin() {
-        for (String n : this.getPlayers()) {
-            if (this.getBlueTeam().getPlayers().contains(n)) {
-                PlayerStats s = plugin.getPlayerStats().get(n);
+        for (UUID u : this.getPlayers()) {
+            if (this.getBlueTeam().getPlayers().contains(u)) {
+                PlayerStats s = plugin.getPlayerStats().get(u);
                 if (s != null) {
                     s.setLosses(s.getLosses() + 1);
                 } else {
-                    s = new PlayerStats(n, 0, 1, 0, 0);
+                    s = new PlayerStats(u, 0, 1, 0, 0);
                 }
-                plugin.getPlayerStats().put(n, s);
+                plugin.getPlayerStats().put(u, s);
             } else {
-                PlayerStats s = plugin.getPlayerStats().get(n);
+                PlayerStats s = plugin.getPlayerStats().get(u);
                 if (s != null) {
                     s.setWins(s.getWins() + 1);
                 } else {
-                    s = new PlayerStats(n, 1, 0, 0, 0);
+                    s = new PlayerStats(u, 1, 0, 0, 0);
                 }
-                plugin.getPlayerStats().put(n, s);
+                plugin.getPlayerStats().put(u, s);
             }
         }
     }
@@ -391,7 +392,7 @@ public class CTTGame extends Game {
 
     public void resetPlayerInventory(Player player) {
         player.getInventory().clear();
-        if (b.getPlayers().contains(player.getName())) {
+        if (b.getPlayers().contains(player.getUniqueId())) {
             player.getInventory().setHelmet(blueHelmet);
         } else {
             player.getInventory().setHelmet(redHelmet);
@@ -400,7 +401,7 @@ public class CTTGame extends Game {
         if (player.getGameMode() != GameMode.SURVIVAL) {
             player.setGameMode(GameMode.SURVIVAL);
         }
-        Kit k = getKit(player.getName());
+        Kit k = getKit(player.getUniqueId());
         if (k != null) {
             debug("Giving " + player.getName() + " kit " + k.getName());
             for (ItemStack h : k.getContents()) {
@@ -422,7 +423,7 @@ public class CTTGame extends Game {
         }
         debug("Resetting player inv, given kit: " + k.getName());
         player.getInventory().clear();
-        if (b.getPlayers().contains(player.getName())) {
+        if (b.getPlayers().contains(player.getUniqueId())) {
             player.getInventory().setHelmet(blueHelmet);
         } else {
             player.getInventory().setHelmet(redHelmet);
@@ -442,7 +443,7 @@ public class CTTGame extends Game {
         player.getInventory().setBoots(boots);
         player.getInventory().setHeldItemSlot(0);
         player.updateInventory();
-        pd.get(player.getName()).setKit(k);
+        pd.get(player.getUniqueId()).setKit(k);
     }
 
     public void addBlocks(int b) {
@@ -504,11 +505,11 @@ public class CTTGame extends Game {
         }
     }
 
-    public Kit getKit(String p) {
-        if (getPlayers().contains(p)) {
-            if (pd.get(p) != null) {
-                if (pd.get(p).getKit() != null) {
-                    return pd.get(p).getKit();
+    public Kit getKit(UUID id) {
+        if (getPlayers().contains(id)) {
+            if (pd.get(id) != null) {
+                if (pd.get(id).getKit() != null) {
+                    return pd.get(id).getKit();
                 }
             }
             return dK.get(new Random().nextInt(dK.size()));
@@ -517,7 +518,7 @@ public class CTTGame extends Game {
         }
     }
 
-    public HashMap<String, PlayerData> getPlayerData() {
+    public HashMap<UUID, PlayerData> getPlayerData() {
         return pd;
     }
 
@@ -532,20 +533,20 @@ public class CTTGame extends Game {
         time = 0;
         resetScores();
         lastKits.clear();
-        for (Entry<String, PlayerData> en : pd.entrySet()) {
+        for (Entry<UUID, PlayerData> en : pd.entrySet()) {
             lastKits.put(en.getKey(), en.getValue().getKit());
         }
         @SuppressWarnings("unchecked")
-        ArrayList<String> list = (ArrayList<String>) this.getPlayers().clone();
+        ArrayList<UUID> list = (ArrayList<UUID>) this.getPlayers().clone();
         if (message && con)
             sendGameMessage(ChatColor.AQUA.toString() + ChatColor.MAGIC + "|" + ChatColor.AQUA + "Resetting game for a new round" + ChatColor.MAGIC + "|");
-        for (String i : list) {
+        for (UUID i : list) {
             removePlayer(Bukkit.getPlayer(i));
         }
         if (con) {
             debug("Shuffling teams..");
             Collections.shuffle(list);
-            for (String i : list) {
+            for (UUID i : list) {
                 addPlayer(Bukkit.getPlayer(i));
             }
         }
